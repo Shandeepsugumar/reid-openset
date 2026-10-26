@@ -49,3 +49,57 @@ def test_market1501_real_data_if_present() -> None:
 
         ds_gallery = Market1501(root_dir=data_dir, split="gallery")
         assert len(ds_gallery) > 0
+
+
+def test_val_split_disjointness_and_exclusion(tmp_path: Path) -> None:
+    """Verify that val and train identities are disjoint and val-query never appears in val-gallery."""
+    train_dir = tmp_path / "bounding_box_train"
+    train_dir.mkdir(parents=True, exist_ok=True)
+
+    dummy_img = Image.new("RGB", (64, 128), color=(100, 150, 200))
+
+    # Create 10 identities (pids 1 to 10), 2 cameras each
+    # pid 1..5: 3 images in c1, 1 image in c2
+    # pid 6..10: 2 images in c1, 2 images in c2
+    for pid in range(1, 11):
+        for cam in (1, 2):
+            num_imgs = 3 if (pid <= 5 and cam == 1) else (1 if (pid <= 5 and cam == 2) else 2)
+            for idx in range(num_imgs):
+                fname = f"{pid:04d}_c{cam}s1_{pid * 100 + idx:06d}_{idx:02d}.jpg"
+                dummy_img.save(train_dir / fname)
+
+    val_identities = 4
+    val_seed = 42
+
+    ds_train = Market1501(
+        root_dir=tmp_path, split="train", val_identities=val_identities, val_seed=val_seed
+    )
+    ds_val_q = Market1501(
+        root_dir=tmp_path, split="val_query", val_identities=val_identities, val_seed=val_seed
+    )
+    ds_val_g = Market1501(
+        root_dir=tmp_path, split="val_gallery", val_identities=val_identities, val_seed=val_seed
+    )
+
+    # 1. Check identity counts
+    assert len(ds_train.heldout_val_pids) == val_identities
+    assert len(ds_train.train_pids) == 10 - val_identities
+    assert set(ds_train.heldout_val_pids).isdisjoint(set(ds_train.train_pids))
+
+    # 2. Check that val-query and val-gallery identities belong strictly to held-out set
+    val_q_pids = {s[1] for s in ds_val_q.samples}
+    val_g_pids = {s[1] for s in ds_val_g.samples}
+    heldout_set = set(ds_train.heldout_val_pids)
+
+    assert val_q_pids.issubset(heldout_set)
+    assert val_g_pids.issubset(heldout_set)
+    assert val_q_pids.isdisjoint(set(ds_train.train_pids))
+    assert val_g_pids.isdisjoint(set(ds_train.train_pids))
+
+    # 3. Check that val-query and val-gallery images are strictly disjoint
+    val_q_paths = {s[0] for s in ds_val_q.samples}
+    val_g_paths = {s[0] for s in ds_val_g.samples}
+
+    assert len(val_q_paths) > 0
+    assert len(val_g_paths) > 0
+    assert val_q_paths.isdisjoint(val_g_paths), "Val-query images must NEVER appear in val-gallery!"

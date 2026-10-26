@@ -11,10 +11,11 @@ import sys
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
+import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
@@ -25,8 +26,12 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from reid.data import Market1501, PKSampler  # noqa: E402
-from reid.losses import BaselineReIDLoss  # noqa: E402
+from reid.data import HardIdentityPKSampler, Market1501, PKSampler  # noqa: E402
+from reid.eval import (  # noqa: E402
+    compute_closed_set_cmc_and_map,
+    compute_openset_metrics_v2,
+)
+from reid.losses import AbsoluteNegativeLoss, BaselineReIDLoss  # noqa: E402
 from reid.models import ReIDBackbone  # noqa: E402
 
 
@@ -114,6 +119,7 @@ class CSVMetricLogger:
             "loss",
             "loss_ce",
             "loss_triplet",
+            "loss_neg_pair",
             "dist_ap",
             "dist_an",
             "gpu_mem_gb",
@@ -132,6 +138,71 @@ class CSVMetricLogger:
             row = {k: metrics.get(k, 0.0) for k in self.fieldnames}
             writer.writerow(row)
             f.flush()
+
+
+@torch.no_grad()
+def evaluate_val_split(
+    model: nn.Module,
+    val_q_loader: DataLoader,
+    val_g_loader: DataLoader,
+    device: torch.device,
+    is_cuda: bool,
+    seeds: Sequence[int] = (0, 1, 2, 3, 4),
+) -> Dict[str, Any]:
+    """Evaluate model on held-out validation split with Evaluator v2."""
+    was_training = model.training
+    model.eval()
+
+    q_feats, q_pids, q_cams = [], [], []
+    for imgs, pids, cams in val_q_loader:
+        imgs = imgs.to(device, non_blocking=is_cuda)
+        feats = model(imgs)
+        q_feats.append(feats.cpu().numpy())
+        q_pids.append(pids.numpy())
+        q_cams.append(cams.numpy())
+
+    g_feats, g_pids, g_cams = [], [], []
+    for imgs, pids, cams in val_g_loader:
+        imgs = imgs.to(device, non_blocking=is_cuda)
+        feats = model(imgs)
+        g_feats.append(feats.cpu().numpy())
+        g_pids.append(pids.numpy())
+        g_cams.append(cams.numpy())
+
+    q_feats = np.vstack(q_feats)
+    q_pids = np.concatenate(q_pids)
+    q_cams = np.concatenate(q_cams)
+    g_feats = np.vstack(g_feats)
+    g_pids = np.concatenate(g_pids)
+    g_cams = np.concatenate(g_cams)
+
+    cmc, mAP = compute_closed_set_cmc_and_map(
+        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams
+    )
+    v2_res = compute_openset_metrics_v2(
+        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams, known_ratio=0.5, seeds=seeds
+    )
+    summary = v2_res["summary"]
+
+    if was_training:
+        model.train()
+
+    def _fmt(val):
+        if isinstance(val, dict):
+            return round(val["mean"] * 100, 2)
+        return str(val)
+
+    return {
+        "rank_1": round(float(cmc[0] * 100), 2),
+        "mAP": round(float(mAP * 100), 2),
+        "far_at_tar_80": _fmt(summary.get("far_at_tar_80")),
+        "far_at_tar_90": _fmt(summary.get("far_at_tar_90")),
+        "dir_at_far_1": _fmt(summary.get("dir_at_far_1")),
+        "dir_at_far_5": _fmt(summary.get("dir_at_far_5")),
+        "max_tar": _fmt(summary.get("max_tar")),
+        "auc": _fmt(summary.get("auc")),
+        "eer": _fmt(summary.get("eer")),
+    }
 
 
 def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> Path:
@@ -238,8 +309,12 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
     batch_size = p * k
     num_workers = int(data_cfg.get("num_workers", 2 if is_cuda else 0))
 
+    val_identities = int(data_cfg.get("val_identities", 0))
+    val_seed = int(data_cfg.get("val_seed", 42))
+    val_every = int(train_cfg.get("val_every", 5))
+
     print(
-        f"[Data] Loading Market-1501 from {dataset_dir} (Smoke test: {smoke_test})..."
+        f"[Data] Loading Market-1501 from {dataset_dir} (Smoke test: {smoke_test}, Val IDs: {val_identities})..."
     )
     train_dataset = Market1501(
         root_dir=dataset_dir,
@@ -247,13 +322,103 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         image_size=image_size,
         smoke_test=smoke_test,
         smoke_identities=smoke_identities or 50,
+        val_identities=val_identities,
+        val_seed=val_seed,
     )
     print(
         f"[Data] Train set: {len(train_dataset)} images, {train_dataset.num_classes} identities, "
         f"batch size = P({p}) x K({k}) = {batch_size}"
     )
 
-    sampler = PKSampler(train_dataset, p=p, k=k)
+    # Validation hold-out loaders and logging
+    val_q_loader = None
+    val_g_loader = None
+    val_csv_path = exp_dir / "val_metrics.csv"
+    val_fieldnames = [
+        "epoch",
+        "rank_1",
+        "mAP",
+        "far_at_tar_80",
+        "far_at_tar_90",
+        "dir_at_far_1",
+        "dir_at_far_5",
+        "max_tar",
+        "auc",
+        "eer",
+    ]
+    if val_identities > 0:
+        val_pids_path = exp_dir / "val_identities.json"
+        with open(val_pids_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "val_identities": train_dataset.heldout_val_pids,
+                    "val_seed": val_seed,
+                    "num_val_identities": val_identities,
+                },
+                f,
+                indent=2,
+            )
+
+        val_q_set = Market1501(
+            root_dir=dataset_dir,
+            split="val_query",
+            image_size=image_size,
+            smoke_test=smoke_test,
+            smoke_identities=smoke_identities or 50,
+            val_identities=val_identities,
+            val_seed=val_seed,
+        )
+        val_g_set = Market1501(
+            root_dir=dataset_dir,
+            split="val_gallery",
+            image_size=image_size,
+            smoke_test=smoke_test,
+            smoke_identities=smoke_identities or 50,
+            val_identities=val_identities,
+            val_seed=val_seed,
+        )
+        val_q_loader = DataLoader(
+            val_q_set,
+            batch_size=128,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=is_cuda,
+        )
+        val_g_loader = DataLoader(
+            val_g_set,
+            batch_size=128,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=is_cuda,
+        )
+        print(
+            f"[Data] Val set: {len(val_q_set)} queries, {len(val_g_set)} gallery images from {val_identities} held-out IDs"
+        )
+        if not val_csv_path.is_file() or not should_resume:
+            with open(val_csv_path, "w", newline="", encoding="utf-8") as f:
+                csv.DictWriter(f, fieldnames=val_fieldnames).writeheader()
+
+    # Sampler Selection
+    sampler_type = data_cfg.get("sampler", "pk").lower()
+    if sampler_type == "hard_identity":
+        hard_cfg = data_cfg.get("hard_sampler", {})
+        group_size = int(hard_cfg.get("group_size", 4))
+        m_neighbors = int(hard_cfg.get("m_neighbors", 3 * group_size))
+        refresh_every = int(hard_cfg.get("refresh_every", 5))
+        mining_start_epoch = int(hard_cfg.get("mining_start_epoch", 10))
+        sampler = HardIdentityPKSampler(
+            train_dataset,
+            p=p,
+            k=k,
+            group_size=group_size,
+            m_neighbors=m_neighbors,
+            refresh_every=refresh_every,
+            mining_start_epoch=mining_start_epoch,
+            seed=seed,
+        )
+    else:
+        sampler = PKSampler(train_dataset, p=p, k=k)
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -264,7 +429,13 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         drop_last=True,
     )
 
-    # 5. Model Architecture
+    # 5. Model Architecture & Margin Config
+    loss_cfg = config.get("loss", {})
+    loss_cls = str(loss_cfg.get("cls", "ce")).lower()
+    margin_m = float(loss_cfg.get("margin_m", 0.35 if loss_cls == "cosface" else 0.5))
+    scale_s = float(loss_cfg.get("scale_s", 30.0))
+    margin_warmup_epochs = int(loss_cfg.get("margin_warmup_epochs", 10))
+
     model_cfg = config.get("model", {})
     model = ReIDBackbone(
         backbone_name=model_cfg.get("backbone", "resnet18"),
@@ -272,15 +443,35 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         num_classes=train_dataset.num_classes,
         pretrained=model_cfg.get("pretrained", True),
         neck_feat=model_cfg.get("neck_feat", "after"),
+        classifier_type=loss_cls,
+        margin_s=scale_s,
+        margin_m=margin_m,
     ).to(device)
 
-    # 6. Loss
-    loss_cfg = config.get("loss", {})
+    # 6. Loss Functions
+    neg_pair_cfg = loss_cfg.get("neg_pair", {})
+    if neg_pair_cfg.get("enabled", False):
+        neg_pair_loss = AbsoluteNegativeLoss(
+            tau_neg=float(neg_pair_cfg.get("tau_neg", 0.5)),
+            k=int(neg_pair_cfg.get("k", 3)),
+            weight=float(neg_pair_cfg.get("weight", 0.5)),
+            tau_pos=neg_pair_cfg.get("tau_pos", None),
+            pos_weight=float(neg_pair_cfg.get("pos_weight", 0.0)),
+        ).to(device)
+    else:
+        neg_pair_loss = None
+
+    # No label smoothing with margin heads
+    label_smoothing = (
+        0.0 if loss_cls in ("cosface", "arcface") else float(loss_cfg.get("label_smoothing", 0.1))
+    )
+
     criterion = BaselineReIDLoss(
         margin=float(loss_cfg.get("margin", 0.3)),
-        label_smoothing=float(loss_cfg.get("label_smoothing", 0.1)),
+        label_smoothing=label_smoothing,
         weight_ce=float(loss_cfg.get("weight_ce", 1.0)),
         weight_triplet=float(loss_cfg.get("weight_triplet", 1.0)),
+        neg_pair_loss=neg_pair_loss,
     ).to(device)
 
     # 7. Optimizer & Warmup+Cosine Scheduler
@@ -353,6 +544,22 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         running = defaultdict(float)
         steps = 0
 
+        # Hard Identity centroid refresh
+        if sampler_type == "hard_identity":
+            sampler.set_epoch(epoch)
+            if (epoch >= mining_start_epoch) and (
+                (epoch - mining_start_epoch) % refresh_every == 0
+                or sampler.similarity_matrix is None
+            ):
+                sampler.refresh_centroids(model, device=device, image_size=image_size)
+
+        # Margin warmup: ramp m from 0 to margin_m linearly
+        if loss_cls in ("cosface", "arcface"):
+            factor = min(1.0, float(epoch) / float(max(1, margin_warmup_epochs)))
+            curr_m = margin_m * factor
+            if hasattr(model.classifier, "set_margin"):
+                model.classifier.set_margin(curr_m)
+
         pbar = tqdm(
             train_loader, desc=f"Epoch {epoch:02d}/{total_epochs:02d}", leave=False
         )
@@ -364,13 +571,13 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
 
             if is_cuda and use_amp:
                 with torch.amp.autocast("cuda", enabled=True):
-                    logits, norm_feat = model(images)
+                    logits, norm_feat = model(images, targets=pids)
                     loss, metrics = criterion(logits, norm_feat, pids)
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
             else:
-                logits, norm_feat = model(images)
+                logits, norm_feat = model(images, targets=pids)
                 loss, metrics = criterion(logits, norm_feat, pids)
                 loss.backward()
                 optimizer.step()
@@ -410,12 +617,44 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
             "loss": round(avg_loss, 5),
             "loss_ce": round(avg_ce, 5),
             "loss_triplet": round(avg_triplet, 5),
+            "loss_neg_pair": round(running["loss_neg_pair"] / max(1, steps), 5)
+            if "loss_neg_pair" in running
+            else 0.0,
             "dist_ap": round(avg_ap, 4),
             "dist_an": round(avg_an, 4),
             "gpu_mem_gb": round(gpu_mem, 3),
             "epoch_time_sec": round(elapsed, 2),
         }
         metric_logger.log_epoch(epoch_metrics)
+
+        # Validation split evaluation
+        if (
+            val_identities > 0
+            and val_q_loader is not None
+            and (epoch % val_every == 0 or epoch == total_epochs)
+        ):
+            print(
+                f"[Validation] Evaluating held-out validation split at Epoch {epoch:03d}..."
+            )
+            val_results = evaluate_val_split(
+                model=model,
+                val_q_loader=val_q_loader,
+                val_g_loader=val_g_loader,
+                device=device,
+                is_cuda=is_cuda,
+                seeds=(0, 1, 2, 3, 4),
+            )
+            val_results["epoch"] = epoch
+            with open(val_csv_path, "a", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=val_fieldnames)
+                writer.writerow(val_results)
+                f.flush()
+            print(
+                f"[Validation Epoch {epoch:03d}] "
+                f"Rank-1: {val_results['rank_1']:.2f}% | mAP: {val_results['mAP']:.2f}% | "
+                f"FAR@TAR80: {val_results['far_at_tar_80']}% | DIR@FAR1: {val_results['dir_at_far_1']}% | "
+                f"max TAR: {val_results['max_tar']}%"
+            )
 
         # 10. Checkpoint policy:
         # Save latest full state every epoch

@@ -192,12 +192,15 @@ def evaluate(
 
     # Model
     model_cfg = config.get("model", {})
+    loss_cfg = config.get("loss", {})
+    loss_cls = str(loss_cfg.get("cls", "ce")).lower()
     model = ReIDBackbone(
         backbone_name=model_cfg.get("backbone", "resnet18"),
         embedding_dim=model_cfg.get("embedding_dim", 512),
         num_classes=train_set.num_classes,
         pretrained=False,
         neck_feat=model_cfg.get("neck_feat", "after"),
+        classifier_type=loss_cls,
     ).to(device)
 
     ckpt = torch.load(ckpt_file, map_location=device)

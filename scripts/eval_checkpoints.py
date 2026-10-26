@@ -169,12 +169,14 @@ def main() -> None:
     )
 
     # Load Model structure
+    loss_cls = str(config.get("loss", {}).get("cls", "ce")).lower()
     model = ReIDBackbone(
         backbone_name=config.get("model", {}).get("backbone", "resnet18"),
         embedding_dim=config.get("model", {}).get("embedding_dim", 512),
         num_classes=train_set.num_classes,
         pretrained=False,
         neck_feat=config.get("model", {}).get("neck_feat", "after"),
+        classifier_type=loss_cls,
     ).to(device)
 
     # Load train loss history if provided

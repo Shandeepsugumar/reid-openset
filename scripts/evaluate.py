@@ -173,8 +173,6 @@ def evaluate(
     gallery_set = Market1501(
         root_dir=data_folder, split="gallery", image_size=image_size
     )
-    train_set = Market1501(root_dir=data_folder, split="train", image_size=image_size)
-
     query_loader = DataLoader(
         query_set,
         batch_size=128,
@@ -190,6 +188,24 @@ def evaluate(
         pin_memory=(device.type == "cuda"),
     )
 
+    # Load Checkpoint first to determine model parameters dynamically
+    ckpt = torch.load(ckpt_file, map_location=device)
+    state_dict = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
+
+    if "classifier.weight" in state_dict:
+        num_classes = state_dict["classifier.weight"].size(0)
+    else:
+        val_identities = int(config.get("data", {}).get("val_identities", 0))
+        val_seed = int(config.get("data", {}).get("val_seed", 42))
+        train_set = Market1501(
+            root_dir=data_folder,
+            split="train",
+            image_size=image_size,
+            val_identities=val_identities,
+            val_seed=val_seed,
+        )
+        num_classes = train_set.num_classes
+
     # Model
     model_cfg = config.get("model", {})
     loss_cfg = config.get("loss", {})
@@ -197,14 +213,12 @@ def evaluate(
     model = ReIDBackbone(
         backbone_name=model_cfg.get("backbone", "resnet18"),
         embedding_dim=model_cfg.get("embedding_dim", 512),
-        num_classes=train_set.num_classes,
+        num_classes=num_classes,
         pretrained=False,
         neck_feat=model_cfg.get("neck_feat", "after"),
         classifier_type=loss_cls,
     ).to(device)
 
-    ckpt = torch.load(ckpt_file, map_location=device)
-    state_dict = ckpt["model_state_dict"] if "model_state_dict" in ckpt else ckpt
     model.load_state_dict(state_dict)
     model.eval()
 

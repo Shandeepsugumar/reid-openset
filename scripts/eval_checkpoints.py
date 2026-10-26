@@ -151,7 +151,6 @@ def main() -> None:
 
     query_set = Market1501(data_folder, split="query", image_size=image_size)
     gallery_set = Market1501(data_folder, split="gallery", image_size=image_size)
-    train_set = Market1501(data_folder, split="train", image_size=image_size)
 
     query_loader = DataLoader(
         query_set,
@@ -168,12 +167,27 @@ def main() -> None:
         pin_memory=(device.type == "cuda"),
     )
 
+    # Determine num_classes from checkpoint if available
+    num_classes = 751
+    if checkpoints:
+        try:
+            first_ckpt = torch.load(checkpoints[0][1], map_location=device)
+            first_sd = (
+                first_ckpt["model_state_dict"]
+                if "model_state_dict" in first_ckpt
+                else first_ckpt
+            )
+            if "classifier.weight" in first_sd:
+                num_classes = first_sd["classifier.weight"].size(0)
+        except Exception:
+            pass
+
     # Load Model structure
     loss_cls = str(config.get("loss", {}).get("cls", "ce")).lower()
     model = ReIDBackbone(
         backbone_name=config.get("model", {}).get("backbone", "resnet18"),
         embedding_dim=config.get("model", {}).get("embedding_dim", 512),
-        num_classes=train_set.num_classes,
+        num_classes=num_classes,
         pretrained=False,
         neck_feat=config.get("model", {}).get("neck_feat", "after"),
         classifier_type=loss_cls,

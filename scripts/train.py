@@ -395,12 +395,13 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         avg_ap = running["dist_ap"] / max(1, steps)
         avg_an = running["dist_an"] / max(1, steps)
 
+        mem_str = f"GPU Mem: {gpu_mem:.2f}GB | " if is_cuda else ""
         print(
             f"Epoch [{epoch:03d}/{total_epochs:03d}] "
             f"Loss: {avg_loss:.4f} (CE: {avg_ce:.4f}, Tri: {avg_triplet:.4f}) | "
             f"d(ap): {avg_ap:.3f}, d(an): {avg_an:.3f} | "
             f"LR: {cur_lr:.6f} | "
-            f"{f'GPU Mem: {gpu_mem:.2f}GB | ' if is_cuda else ''}Time: {elapsed:.1f}s"
+            f"{mem_str}Time: {elapsed:.1f}s"
         )
 
         epoch_metrics = {

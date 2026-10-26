@@ -31,3 +31,8 @@ training:
   save_epoch_freq: 1      # Save checkpoint every epoch
   csv_log_path: "logs/train_metrics.csv"
   resume: true            # Automatically resume from latest checkpoint if exists
+
+openset:
+  known_ratio: 0.5
+  seed: 42
+  seeds: [0, 1, 2, 3, 4]

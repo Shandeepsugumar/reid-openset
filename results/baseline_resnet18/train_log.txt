@@ -1,0 +1,154 @@
+Drive already mounted at /content/drive; to attempt to forcibly remount, call drive.mount("/content/drive", force_remount=True).
+[Setup] Google Drive mounted successfully at /content/drive
+[Setup] Active GPU: Tesla T4
+[Setup] Found dataset archive at: /content/drive/MyDrive/dataset/archive (1).zip
+[Setup] Extracting into /content/data ...
+[Setup] Extraction completed successfully.
+[Setup] Resolved dataset root: /content/data/Market-1501-v15.09.15
+
+[Setup] Verifying split files:
+  - train  : 12936 images |  751 identities |  6 cameras
+  - query  :  3368 images |  750 identities |  6 cameras
+  - gallery: 19732 images |  752 identities |  6 cameras
+[Setup] Dataset sanity check: PASSED.
+[Config] Configuration initialized successfully.
+
+=================================================================
+--- STARTING TRAINING (Smoke Test: False) ---
+Total Epochs: 60 | Device: Tesla T4
+Checkpoints: /content/drive/MyDrive/reid_openset/checkpoints
+CSV Logs:    /content/drive/MyDrive/reid_openset/outputs/train_metrics.csv
+=================================================================
+[Data] Training samples: 12936 across 751 identities
+Downloading: "https://download.pytorch.org/models/resnet18-f37072fd.pth" to /root/.cache/torch/hub/checkpoints/resnet18-f37072fd.pth
+100%|██████████| 44.7M/44.7M [00:00<00:00, 123MB/s]
+/tmp/ipykernel_1742/262899231.py:551: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler(enabled=True)
+[Resume] No existing checkpoint found. Starting fresh from scratch.
+
+/tmp/ipykernel_1742/262899231.py:590: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=True):
+Epoch [001/060] Loss: 6.8891 (CE: 6.5164, Tri: 0.3727) | d(ap): 1.308, d(an): 1.237 | LR: 0.000140 | GPU Mem: 0.72GB | Time: 29.7s
+Epoch [002/060] Loss: 6.1015 (CE: 5.8423, Tri: 0.2592) | d(ap): 0.981, d(an): 1.045 | LR: 0.000210 | GPU Mem: 0.72GB | Time: 27.3s
+Epoch [003/060] Loss: 4.9278 (CE: 4.7518, Tri: 0.1760) | d(ap): 0.843, d(an): 1.023 | LR: 0.000280 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [004/060] Loss: 3.7956 (CE: 3.6593, Tri: 0.1363) | d(ap): 0.824, d(an): 1.061 | LR: 0.000350 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [005/060] Loss: 2.9483 (CE: 2.8312, Tri: 0.1171) | d(ap): 0.849, d(an): 1.109 | LR: 0.000350 | GPU Mem: 0.72GB | Time: 29.7s
+Epoch [006/060] Loss: 2.2698 (CE: 2.1776, Tri: 0.0922) | d(ap): 0.857, d(an): 1.145 | LR: 0.000350 | GPU Mem: 0.72GB | Time: 30.0s
+Epoch [007/060] Loss: 1.9673 (CE: 1.8840, Tri: 0.0833) | d(ap): 0.868, d(an): 1.166 | LR: 0.000349 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [008/060] Loss: 1.7658 (CE: 1.6881, Tri: 0.0776) | d(ap): 0.881, d(an): 1.183 | LR: 0.000347 | GPU Mem: 0.72GB | Time: 30.0s
+Epoch [009/060] Loss: 1.6464 (CE: 1.5768, Tri: 0.0696) | d(ap): 0.885, d(an): 1.194 | LR: 0.000345 | GPU Mem: 0.72GB | Time: 30.1s
+Epoch [010/060] Loss: 1.5942 (CE: 1.5252, Tri: 0.0690) | d(ap): 0.895, d(an): 1.204 | LR: 0.000343 | GPU Mem: 0.72GB | Time: 30.3s
+Epoch [011/060] Loss: 1.5303 (CE: 1.4684, Tri: 0.0619) | d(ap): 0.895, d(an): 1.212 | LR: 0.000340 | GPU Mem: 0.72GB | Time: 29.6s
+Epoch [012/060] Loss: 1.5055 (CE: 1.4432, Tri: 0.0623) | d(ap): 0.901, d(an): 1.216 | LR: 0.000336 | GPU Mem: 0.72GB | Time: 29.4s
+Epoch [013/060] Loss: 1.4666 (CE: 1.4085, Tri: 0.0581) | d(ap): 0.898, d(an): 1.223 | LR: 0.000332 | GPU Mem: 0.72GB | Time: 29.4s
+Epoch [014/060] Loss: 1.4508 (CE: 1.3923, Tri: 0.0586) | d(ap): 0.904, d(an): 1.225 | LR: 0.000327 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [015/060] Loss: 1.4259 (CE: 1.3717, Tri: 0.0542) | d(ap): 0.900, d(an): 1.228 | LR: 0.000322 | GPU Mem: 0.72GB | Time: 29.5s
+Epoch [016/060] Loss: 1.3991 (CE: 1.3487, Tri: 0.0503) | d(ap): 0.898, d(an): 1.231 | LR: 0.000317 | GPU Mem: 0.72GB | Time: 29.4s
+Epoch [017/060] Loss: 1.4026 (CE: 1.3497, Tri: 0.0528) | d(ap): 0.904, d(an): 1.233 | LR: 0.000310 | GPU Mem: 0.72GB | Time: 29.3s
+Epoch [018/060] Loss: 1.3919 (CE: 1.3393, Tri: 0.0526) | d(ap): 0.903, d(an): 1.235 | LR: 0.000304 | GPU Mem: 0.72GB | Time: 29.4s
+Epoch [019/060] Loss: 1.3635 (CE: 1.3175, Tri: 0.0460) | d(ap): 0.899, d(an): 1.242 | LR: 0.000297 | GPU Mem: 0.72GB | Time: 29.2s
+Epoch [020/060] Loss: 1.3442 (CE: 1.3002, Tri: 0.0440) | d(ap): 0.897, d(an): 1.245 | LR: 0.000290 | GPU Mem: 0.72GB | Time: 29.7s
+Epoch [021/060] Loss: 1.3369 (CE: 1.2924, Tri: 0.0445) | d(ap): 0.898, d(an): 1.242 | LR: 0.000282 | GPU Mem: 0.72GB | Time: 29.5s
+Epoch [022/060] Loss: 1.3181 (CE: 1.2778, Tri: 0.0403) | d(ap): 0.896, d(an): 1.249 | LR: 0.000274 | GPU Mem: 0.72GB | Time: 29.4s
+Epoch [023/060] Loss: 1.3179 (CE: 1.2777, Tri: 0.0402) | d(ap): 0.896, d(an): 1.249 | LR: 0.000265 | GPU Mem: 0.72GB | Time: 29.0s
+Epoch [024/060] Loss: 1.3055 (CE: 1.2661, Tri: 0.0393) | d(ap): 0.898, d(an): 1.252 | LR: 0.000257 | GPU Mem: 0.72GB | Time: 28.9s
+Epoch [025/060] Loss: 1.2862 (CE: 1.2500, Tri: 0.0363) | d(ap): 0.895, d(an): 1.256 | LR: 0.000248 | GPU Mem: 0.72GB | Time: 28.9s
+Epoch [026/060] Loss: 1.2777 (CE: 1.2412, Tri: 0.0365) | d(ap): 0.892, d(an): 1.257 | LR: 0.000238 | GPU Mem: 0.72GB | Time: 28.9s
+Epoch [027/060] Loss: 1.2646 (CE: 1.2313, Tri: 0.0333) | d(ap): 0.892, d(an): 1.260 | LR: 0.000229 | GPU Mem: 0.72GB | Time: 28.9s
+Epoch [028/060] Loss: 1.2731 (CE: 1.2367, Tri: 0.0364) | d(ap): 0.897, d(an): 1.260 | LR: 0.000219 | GPU Mem: 0.72GB | Time: 29.1s
+Epoch [029/060] Loss: 1.2494 (CE: 1.2168, Tri: 0.0326) | d(ap): 0.894, d(an): 1.265 | LR: 0.000210 | GPU Mem: 0.72GB | Time: 29.2s
+Epoch [030/060] Loss: 1.2374 (CE: 1.2071, Tri: 0.0303) | d(ap): 0.890, d(an): 1.268 | LR: 0.000200 | GPU Mem: 0.72GB | Time: 29.2s
+Epoch [031/060] Loss: 1.2273 (CE: 1.2000, Tri: 0.0274) | d(ap): 0.885, d(an): 1.270 | LR: 0.000190 | GPU Mem: 0.72GB | Time: 29.0s
+Epoch [032/060] Loss: 1.2186 (CE: 1.1912, Tri: 0.0274) | d(ap): 0.890, d(an): 1.272 | LR: 0.000180 | GPU Mem: 0.72GB | Time: 29.0s
+Epoch [033/060] Loss: 1.2028 (CE: 1.1798, Tri: 0.0230) | d(ap): 0.881, d(an): 1.277 | LR: 0.000170 | GPU Mem: 0.72GB | Time: 28.8s
+Epoch [034/060] Loss: 1.1903 (CE: 1.1675, Tri: 0.0229) | d(ap): 0.878, d(an): 1.279 | LR: 0.000160 | GPU Mem: 0.72GB | Time: 29.2s
+Epoch [035/060] Loss: 1.1871 (CE: 1.1664, Tri: 0.0207) | d(ap): 0.875, d(an): 1.282 | LR: 0.000150 | GPU Mem: 0.72GB | Time: 29.0s
+Epoch [036/060] Loss: 1.1880 (CE: 1.1654, Tri: 0.0226) | d(ap): 0.879, d(an): 1.281 | LR: 0.000140 | GPU Mem: 0.72GB | Time: 28.9s
+Epoch [037/060] Loss: 1.1767 (CE: 1.1566, Tri: 0.0201) | d(ap): 0.877, d(an): 1.284 | LR: 0.000131 | GPU Mem: 0.72GB | Time: 29.1s
+Epoch [038/060] Loss: 1.1668 (CE: 1.1481, Tri: 0.0187) | d(ap): 0.873, d(an): 1.287 | LR: 0.000121 | GPU Mem: 0.72GB | Time: 29.6s
+Epoch [039/060] Loss: 1.1537 (CE: 1.1375, Tri: 0.0162) | d(ap): 0.867, d(an): 1.290 | LR: 0.000112 | GPU Mem: 0.72GB | Time: 29.0s
+Epoch [040/060] Loss: 1.1510 (CE: 1.1353, Tri: 0.0157) | d(ap): 0.865, d(an): 1.291 | LR: 0.000102 | GPU Mem: 0.72GB | Time: 28.8s
+Epoch [041/060] Loss: 1.1400 (CE: 1.1258, Tri: 0.0143) | d(ap): 0.865, d(an): 1.294 | LR: 0.000093 | GPU Mem: 0.72GB | Time: 28.8s
+Epoch [042/060] Loss: 1.1373 (CE: 1.1235, Tri: 0.0137) | d(ap): 0.862, d(an): 1.295 | LR: 0.000085 | GPU Mem: 0.72GB | Time: 28.8s
+Epoch [043/060] Loss: 1.1269 (CE: 1.1145, Tri: 0.0124) | d(ap): 0.858, d(an): 1.299 | LR: 0.000076 | GPU Mem: 0.72GB | Time: 29.0s
+Epoch [044/060] Loss: 1.1202 (CE: 1.1087, Tri: 0.0115) | d(ap): 0.855, d(an): 1.301 | LR: 0.000068 | GPU Mem: 0.72GB | Time: 28.8s
+Epoch [045/060] Loss: 1.1139 (CE: 1.1035, Tri: 0.0104) | d(ap): 0.856, d(an): 1.304 | LR: 0.000060 | GPU Mem: 0.72GB | Time: 28.7s
+Epoch [046/060] Loss: 1.1084 (CE: 1.0989, Tri: 0.0096) | d(ap): 0.849, d(an): 1.305 | LR: 0.000053 | GPU Mem: 0.72GB | Time: 29.2s
+Epoch [047/060] Loss: 1.1099 (CE: 1.0994, Tri: 0.0104) | d(ap): 0.849, d(an): 1.306 | LR: 0.000046 | GPU Mem: 0.72GB | Time: 29.4s
+Epoch [048/060] Loss: 1.1023 (CE: 1.0930, Tri: 0.0093) | d(ap): 0.848, d(an): 1.307 | LR: 0.000040 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [049/060] Loss: 1.0990 (CE: 1.0898, Tri: 0.0092) | d(ap): 0.846, d(an): 1.309 | LR: 0.000033 | GPU Mem: 0.72GB | Time: 30.4s
+Epoch [050/060] Loss: 1.0945 (CE: 1.0856, Tri: 0.0089) | d(ap): 0.843, d(an): 1.310 | LR: 0.000028 | GPU Mem: 0.72GB | Time: 30.0s
+Epoch [051/060] Loss: 1.0946 (CE: 1.0858, Tri: 0.0088) | d(ap): 0.843, d(an): 1.310 | LR: 0.000023 | GPU Mem: 0.72GB | Time: 30.0s
+Epoch [052/060] Loss: 1.0903 (CE: 1.0828, Tri: 0.0075) | d(ap): 0.838, d(an): 1.313 | LR: 0.000018 | GPU Mem: 0.72GB | Time: 29.8s
+Epoch [053/060] Loss: 1.0839 (CE: 1.0774, Tri: 0.0064) | d(ap): 0.835, d(an): 1.314 | LR: 0.000014 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [054/060] Loss: 1.0807 (CE: 1.0746, Tri: 0.0060) | d(ap): 0.832, d(an): 1.316 | LR: 0.000010 | GPU Mem: 0.72GB | Time: 30.0s
+Epoch [055/060] Loss: 1.0805 (CE: 1.0741, Tri: 0.0065) | d(ap): 0.835, d(an): 1.317 | LR: 0.000007 | GPU Mem: 0.72GB | Time: 29.7s
+Epoch [056/060] Loss: 1.0798 (CE: 1.0735, Tri: 0.0063) | d(ap): 0.835, d(an): 1.316 | LR: 0.000005 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [057/060] Loss: 1.0795 (CE: 1.0728, Tri: 0.0066) | d(ap): 0.832, d(an): 1.316 | LR: 0.000003 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [058/060] Loss: 1.0794 (CE: 1.0732, Tri: 0.0062) | d(ap): 0.832, d(an): 1.318 | LR: 0.000001 | GPU Mem: 0.72GB | Time: 30.1s
+Epoch [059/060] Loss: 1.0759 (CE: 1.0705, Tri: 0.0054) | d(ap): 0.831, d(an): 1.319 | LR: 0.000001 | GPU Mem: 0.72GB | Time: 29.9s
+Epoch [060/060] Loss: 1.0786 (CE: 1.0720, Tri: 0.0066) | d(ap): 0.830, d(an): 1.316 | LR: 0.000001 | GPU Mem: 0.72GB | Time: 30.1s
+
+[Training] Complete. Checkpoint saved at: /content/drive/MyDrive/reid_openset/checkpoints/latest_checkpoint.pth
+
+=================================================================
+--- STARTING OPEN-SET & CLOSED-SET EVALUATION ---
+=================================================================
+[Eval] Loading weights from: /content/drive/MyDrive/reid_openset/checkpoints/latest_checkpoint.pth
+
+[Eval] Extracting query embeddings...
+/tmp/ipykernel_1742/262899231.py:662: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=True):
+       Extracted 3368 query embeddings (512-dim)
+[Eval] Extracting gallery embeddings...
+Exception ignored in: <function _MultiProcessingDataLoaderIter.__del__ at 0x7a3cb94279c0>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/dist-packages/torch/utils/data/dataloader.py", line 1709, in __del__
+    self._shutdown_workers()
+  File "/usr/local/lib/python3.13/dist-packages/torch/utils/data/dataloader.py", line 1692, in _shutdown_workers
+    if w.is_alive():
+  File "/usr/lib/python3.13/multiprocessing/process.py", line 160, in is_alive
+    assert self._parent_pid == os.getpid(), 'can only test a child process'
+AssertionError: can only test a child process
+Exception ignored in: <function _MultiProcessingDataLoaderIter.__del__ at 0x7a3cb94279c0>
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/dist-packages/torch/utils/data/dataloader.py", line 1709, in __del__
+    self._shutdown_workers()
+  File "/usr/local/lib/python3.13/dist-packages/torch/utils/data/dataloader.py", line 1692, in _shutdown_workers
+    if w.is_alive():
+  File "/usr/lib/python3.13/multiprocessing/process.py", line 160, in is_alive
+    assert self._parent_pid == os.getpid(), 'can only test a child process'
+AssertionError: can only test a child process
+       Extracted 19732 gallery embeddings (512-dim)
+
+[Eval] Saving .npy embedding artifacts to: /content/drive/MyDrive/reid_openset/outputs
+       Successfully saved query and gallery .npy files.
+
+[Eval] Computing closed-set Rank-k and mAP metrics...
+
+----------------------------------------
+  CLOSED-SET RE-IDENTIFICATION RESULTS
+----------------------------------------
+  Rank-1  Accuracy: 90.23%
+  Rank-5  Accuracy: 96.29%
+  Rank-10 Accuracy: 97.98%
+  Mean AP (mAP):   76.89%
+----------------------------------------
+
+[Eval] Computing open-set verification metrics (DIR / TAR vs FAR)...
+
+----------------------------------------
+  OPEN-SET PERSON RE-ID METRICS
+----------------------------------------
+  Enrolled Probes : 1690
+  Impostor Probes : 1678
+  FAR @ TAR=80%   : 14.42%
+  FAR @ TAR=90%   : 37.37%
+  FAR @ TAR=95%   : 100.00%
+----------------------------------------
+[Eval] ROC plot saved to: /content/drive/MyDrive/reid_openset/outputs/roc_curve.png
+[Eval] Full results JSON saved to: /content/drive/MyDrive/reid_openset/outputs/eval_results.json
+
+=================================================================
+[Eval] PIPELINE FINISHED SUCCESSFULLY.
+=================================================================

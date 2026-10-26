@@ -11,7 +11,7 @@ import sys
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 import torch
@@ -473,7 +473,9 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
 
     # No label smoothing with margin heads
     label_smoothing = (
-        0.0 if loss_cls in ("cosface", "arcface") else float(loss_cfg.get("label_smoothing", 0.1))
+        0.0
+        if loss_cls in ("cosface", "arcface")
+        else float(loss_cfg.get("label_smoothing", 0.1))
     )
 
     criterion = BaselineReIDLoss(

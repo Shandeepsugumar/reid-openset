@@ -1,4 +1,4 @@
-﻿"""Absolute negative-pair and positive-pair loss for bounded metric space."""
+"""Absolute negative-pair and positive-pair loss for bounded metric space."""
 
 from typing import Dict, Optional, Tuple
 
@@ -70,7 +70,11 @@ class AbsoluteNegativeLoss(nn.Module):
         neg_sims.masked_fill_(same_id, -2.0)
 
         num_neg_per_row = diff_id.sum(dim=1)
-        max_k = min(self.k, int(num_neg_per_row.max().item())) if num_neg_per_row.max() > 0 else 0
+        max_k = (
+            min(self.k, int(num_neg_per_row.max().item()))
+            if num_neg_per_row.max() > 0
+            else 0
+        )
 
         if max_k > 0:
             topk_neg_sims, _ = torch.topk(neg_sims, k=max_k, dim=1)

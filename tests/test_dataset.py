@@ -63,7 +63,9 @@ def test_val_split_disjointness_and_exclusion(tmp_path: Path) -> None:
     # pid 6..10: 2 images in c1, 2 images in c2
     for pid in range(1, 11):
         for cam in (1, 2):
-            num_imgs = 3 if (pid <= 5 and cam == 1) else (1 if (pid <= 5 and cam == 2) else 2)
+            num_imgs = (
+                3 if (pid <= 5 and cam == 1) else (1 if (pid <= 5 and cam == 2) else 2)
+            )
             for idx in range(num_imgs):
                 fname = f"{pid:04d}_c{cam}s1_{pid * 100 + idx:06d}_{idx:02d}.jpg"
                 dummy_img.save(train_dir / fname)
@@ -72,13 +74,22 @@ def test_val_split_disjointness_and_exclusion(tmp_path: Path) -> None:
     val_seed = 42
 
     ds_train = Market1501(
-        root_dir=tmp_path, split="train", val_identities=val_identities, val_seed=val_seed
+        root_dir=tmp_path,
+        split="train",
+        val_identities=val_identities,
+        val_seed=val_seed,
     )
     ds_val_q = Market1501(
-        root_dir=tmp_path, split="val_query", val_identities=val_identities, val_seed=val_seed
+        root_dir=tmp_path,
+        split="val_query",
+        val_identities=val_identities,
+        val_seed=val_seed,
     )
     ds_val_g = Market1501(
-        root_dir=tmp_path, split="val_gallery", val_identities=val_identities, val_seed=val_seed
+        root_dir=tmp_path,
+        split="val_gallery",
+        val_identities=val_identities,
+        val_seed=val_seed,
     )
 
     # 1. Check identity counts
@@ -102,4 +113,6 @@ def test_val_split_disjointness_and_exclusion(tmp_path: Path) -> None:
 
     assert len(val_q_paths) > 0
     assert len(val_g_paths) > 0
-    assert val_q_paths.isdisjoint(val_g_paths), "Val-query images must NEVER appear in val-gallery!"
+    assert val_q_paths.isdisjoint(val_g_paths), (
+        "Val-query images must NEVER appear in val-gallery!"
+    )

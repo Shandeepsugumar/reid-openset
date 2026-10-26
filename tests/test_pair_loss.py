@@ -1,7 +1,7 @@
-﻿"""Unit tests for AbsoluteNegativeLoss."""
+"""Unit tests for AbsoluteNegativeLoss."""
 
-import torch
 import pytest
+import torch
 
 from reid.losses.pair import AbsoluteNegativeLoss
 
@@ -25,6 +25,7 @@ def test_absolute_negative_loss_active_when_above_tau():
     """When negative cosine similarity exceeds tau_neg, relu penalty is active."""
     # cos_sim between [1, 0] and [cos(30 deg), sin(30 deg)] = cos(30 deg) ~= 0.866
     import math
+
     angle = math.radians(30.0)
     cos_val = math.cos(angle)
     sin_val = math.sin(angle)
@@ -52,9 +53,9 @@ def test_hardest_k_selection():
     # Hardest 2 negatives are 0.8 (penalty 0.3) and 0.6 (penalty 0.1) -> mean penalty = 0.2
     # 0.2 is below tau_neg and excluded by top-k
     e_anchor = torch.tensor([[1.0, 0.0]])
-    e_neg1 = torch.tensor([[0.8, 0.6]])    # cos_sim = 0.8
-    e_neg2 = torch.tensor([[0.6, 0.8]])    # cos_sim = 0.6
-    e_neg3 = torch.tensor([[0.2, 0.9798]]) # cos_sim = 0.2
+    e_neg1 = torch.tensor([[0.8, 0.6]])  # cos_sim = 0.8
+    e_neg2 = torch.tensor([[0.6, 0.8]])  # cos_sim = 0.6
+    e_neg3 = torch.tensor([[0.2, 0.9798]])  # cos_sim = 0.2
 
     embeddings = torch.cat([e_anchor, e_neg1, e_neg2, e_neg3], dim=0)
     targets = torch.tensor([0, 1, 2, 3])

@@ -1,4 +1,4 @@
-﻿"""Unit tests for Evaluator v2 open-set ReID metrics."""
+"""Unit tests for Evaluator v2 open-set ReID metrics."""
 
 import numpy as np
 import pytest

@@ -147,7 +147,10 @@ class Market1501(Dataset):
             cams_set.add(camid)
 
         # Handle validation hold-out when data comes from bounding_box_train
-        if self.split in ("train", "val_query", "val_gallery") and self.val_identities > 0:
+        if (
+            self.split in ("train", "val_query", "val_gallery")
+            and self.val_identities > 0
+        ):
             import numpy as np
 
             all_pids = sorted(pids_set)
@@ -174,7 +177,9 @@ class Market1501(Dataset):
                 # Group by (pid, camid)
                 from collections import defaultdict
 
-                grouped: Dict[Tuple[int, int], List[Tuple[str, int, int]]] = defaultdict(list)
+                grouped: Dict[Tuple[int, int], List[Tuple[str, int, int]]] = (
+                    defaultdict(list)
+                )
                 for s in val_raw_samples:
                     grouped[(s[1], s[2])].append(s)
 

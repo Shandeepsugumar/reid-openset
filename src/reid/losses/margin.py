@@ -1,4 +1,4 @@
-﻿"""Margin-based softmax heads (CosFace and ArcFace) for deep metric learning."""
+"""Margin-based softmax heads (CosFace and ArcFace) for deep metric learning."""
 
 import math
 from typing import Optional

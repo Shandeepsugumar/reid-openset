@@ -7,6 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as tv_models
 
+from reid.losses.margin import MarginSoftmaxHead
+
 
 def weights_init_kaiming(m: nn.Module) -> None:
     classname = m.__class__.__name__
@@ -26,9 +28,6 @@ def weights_init_classifier(m: nn.Module) -> None:
         nn.init.normal_(m.weight, std=0.001)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0.0)
-
-
-from reid.losses.margin import MarginSoftmaxHead
 
 
 class ReIDBackbone(nn.Module):

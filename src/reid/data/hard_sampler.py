@@ -47,7 +47,9 @@ class HardIdentityPKSampler(Sampler[List[int]]):
         self.p = int(p)
         self.k = int(k)
         self.group_size = int(group_size)
-        self.m_neighbors = int(m_neighbors) if m_neighbors is not None else 3 * self.group_size
+        self.m_neighbors = (
+            int(m_neighbors) if m_neighbors is not None else 3 * self.group_size
+        )
         self.refresh_every = int(refresh_every)
         self.mining_start_epoch = int(mining_start_epoch)
         self.seed = int(seed)
@@ -75,7 +77,7 @@ class HardIdentityPKSampler(Sampler[List[int]]):
                 _, pid, _ = data_source[idx]
                 self.pid_to_indices[pid].append(idx)
 
-        self.identities = sorted(list(self.pid_to_indices.keys()))
+        self.identities = sorted(self.pid_to_indices.keys())
         self.num_identities = len(self.identities)
         self.pid_to_id_idx: Dict[int, int] = {
             pid: i for i, pid in enumerate(self.identities)
@@ -99,14 +101,16 @@ class HardIdentityPKSampler(Sampler[List[int]]):
         if device is None:
             device = next(model.parameters()).device
 
-        eval_transform = transforms.Compose([
-            transforms.Resize(tuple(image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ),
-        ])
+        eval_transform = transforms.Compose(
+            [
+                transforms.Resize(tuple(image_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ]
+        )
 
         centroids_list: List[torch.Tensor] = []
 
@@ -132,7 +136,9 @@ class HardIdentityPKSampler(Sampler[List[int]]):
                         elif isinstance(img_data, Image.Image):
                             img_tensor = eval_transform(img_data)
                         elif isinstance(img_data, str) and os.path.isfile(img_data):
-                            img_tensor = eval_transform(Image.open(img_data).convert("RGB"))
+                            img_tensor = eval_transform(
+                                Image.open(img_data).convert("RGB")
+                            )
 
                     if img_tensor is not None:
                         batch_tensors.append(img_tensor)
@@ -177,7 +183,7 @@ class HardIdentityPKSampler(Sampler[List[int]]):
                     if len(available_pids) == 0:
                         break
 
-                    avail_list = sorted(list(available_pids))
+                    avail_list = sorted(available_pids)
                     anchor = avail_list[rng.choice(len(avail_list))]
                     batch_pids.append(anchor)
                     available_pids.remove(anchor)
@@ -211,11 +217,15 @@ class HardIdentityPKSampler(Sampler[List[int]]):
                             available_pids.remove(nb)
 
                 if len(batch_pids) < self.p:
-                    rem_candidates = [pid for pid in self.identities if pid not in set(batch_pids)]
+                    rem_candidates = [
+                        pid for pid in self.identities if pid not in set(batch_pids)
+                    ]
                     needed_extra = self.p - len(batch_pids)
                     if len(rem_candidates) >= needed_extra:
                         batch_pids.extend(
-                            rng.choice(rem_candidates, size=needed_extra, replace=False).tolist()
+                            rng.choice(
+                                rem_candidates, size=needed_extra, replace=False
+                            ).tolist()
                         )
 
             batch_indices = []

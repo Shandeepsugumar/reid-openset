@@ -4,7 +4,7 @@ import argparse
 import csv
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -143,8 +143,12 @@ def read_test_metrics(exp_dirs: List[Path]) -> Dict[str, str]:
                     return {
                         "Test Rank-1": f"{float(r1):.2f}%",
                         "Test mAP": f"{float(map_val):.2f}%",
-                        "Test FAR@TAR=80": _format_stat(float(far80) * 100 if far80 is not None else None),
-                        "Test FAR@TAR=90": _format_stat(float(far90) * 100 if far90 is not None else None),
+                        "Test FAR@TAR=80": _format_stat(
+                            float(far80) * 100 if far80 is not None else None
+                        ),
+                        "Test FAR@TAR=90": _format_stat(
+                            float(far90) * 100 if far90 is not None else None
+                        ),
                         "Test DIR@FAR=1%": "N/A (legacy)",
                         "Test DIR@FAR=5%": "N/A (legacy)",
                         "Test max TAR": "N/A (legacy)",

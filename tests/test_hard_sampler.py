@@ -1,4 +1,4 @@
-﻿"""Unit tests for HardIdentityPKSampler."""
+"""Unit tests for HardIdentityPKSampler."""
 
 import numpy as np
 import torch
@@ -66,7 +66,9 @@ def test_batch_size_and_no_duplicate_identities():
         assert len(batch) == p * k
         batch_pids = [dataset.samples[idx][1] for idx in batch]
         unique_batch_pids = set(batch_pids)
-        assert len(unique_batch_pids) == p  # Exactly p distinct identities, no duplicates
+        assert (
+            len(unique_batch_pids) == p
+        )  # Exactly p distinct identities, no duplicates
 
 
 def test_fallback_to_pk_before_mining_start_epoch():

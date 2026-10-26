@@ -1,11 +1,10 @@
 """Smoke test for all 5 ablation experiment configurations."""
 
 from pathlib import Path
+
 import pytest
-import yaml
 
 from scripts.train import load_config, train
-
 
 CONFIG_FILES = [
     "configs/exp/e0_baseline_val.yaml",

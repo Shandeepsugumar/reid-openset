@@ -1,7 +1,7 @@
 """Unit tests for MarginSoftmaxHead (CosFace and ArcFace)."""
 
-import torch
 import pytest
+import torch
 
 from reid.losses.margin import MarginSoftmaxHead
 
@@ -12,7 +12,9 @@ def test_output_shape():
     num_classes = 20
 
     for kind in ("cosface", "arcface"):
-        head = MarginSoftmaxHead(embedding_dim=dim, num_classes=num_classes, s=30.0, m=0.35, kind=kind)
+        head = MarginSoftmaxHead(
+            embedding_dim=dim, num_classes=num_classes, s=30.0, m=0.35, kind=kind
+        )
         features = torch.randn(batch_size, dim)
         targets = torch.randint(0, num_classes, (batch_size,))
 
@@ -31,7 +33,9 @@ def test_gradient_flows():
     num_classes = 10
 
     for kind in ("cosface", "arcface"):
-        head = MarginSoftmaxHead(embedding_dim=dim, num_classes=num_classes, s=30.0, m=0.35, kind=kind)
+        head = MarginSoftmaxHead(
+            embedding_dim=dim, num_classes=num_classes, s=30.0, m=0.35, kind=kind
+        )
         features = torch.randn(batch_size, dim, requires_grad=True)
         targets = torch.randint(0, num_classes, (batch_size,))
 
@@ -52,7 +56,9 @@ def test_target_logit_lower_when_m_greater_than_zero():
     s = 30.0
 
     for kind in ("cosface", "arcface"):
-        head = MarginSoftmaxHead(embedding_dim=dim, num_classes=num_classes, s=s, m=0.35, kind=kind)
+        head = MarginSoftmaxHead(
+            embedding_dim=dim, num_classes=num_classes, s=s, m=0.35, kind=kind
+        )
         features = torch.randn(batch_size, dim)
         targets = torch.tensor([0, 1, 2, 3])
 
@@ -70,7 +76,9 @@ def test_target_logit_lower_when_m_greater_than_zero():
             # For non-target classes, logits must be identical
             for c in range(num_classes):
                 if c != target_class:
-                    assert margin_logits[i, c].item() == pytest.approx(plain_logits[i, c].item(), abs=1e-5)
+                    assert margin_logits[i, c].item() == pytest.approx(
+                        plain_logits[i, c].item(), abs=1e-5
+                    )
 
 
 def test_m_zero_equals_plain_cosine_softmax():
@@ -80,7 +88,9 @@ def test_m_zero_equals_plain_cosine_softmax():
     s = 30.0
 
     for kind in ("cosface", "arcface"):
-        head = MarginSoftmaxHead(embedding_dim=dim, num_classes=num_classes, s=s, m=0.0, kind=kind)
+        head = MarginSoftmaxHead(
+            embedding_dim=dim, num_classes=num_classes, s=s, m=0.0, kind=kind
+        )
         features = torch.randn(batch_size, dim)
         targets = torch.tensor([0, 1, 2, 3])
 

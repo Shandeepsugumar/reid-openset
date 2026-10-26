@@ -1,0 +1,47 @@
+# Baseline Configuration matching Colab T4 reference
+exp_name: "baseline_resnet18"
+
+# Environment & Paths (can be overridden via CLI --data-root / --output-root or env vars)
+data_root: "data/Market-1501-v15.09.15"
+output_root: "outputs"
+
+# Fast verification switch
+smoke_test: false
+smoke_test_identities: 50
+smoke_test_epochs: 2
+
+# Model architecture
+model:
+  backbone: "resnet18"
+  embedding_dim: 512
+  pretrained: true
+  neck_feat: "after"
+
+# Data & Sampling
+data:
+  image_size: [256, 128]  # [height, width]
+  p: 16                   # Distinct identities per batch
+  k: 4                    # Images per identity -> batch size = 64
+  num_workers: 2
+  seed: 42
+
+# Optimization & Loss
+training:
+  epochs: 60
+  warmup_epochs: 5
+  lr: 0.00035
+  min_lr: 0.000001
+  weight_decay: 0.0005
+  use_amp: true
+  device: "cuda"
+
+loss:
+  margin: 0.3
+  label_smoothing: 0.1
+  weight_ce: 1.0
+  weight_triplet: 1.0
+
+# Open-Set Protocol
+openset:
+  known_ratio: 0.5
+  seed: 42

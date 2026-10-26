@@ -1,6 +1,7 @@
 """Image transforms and data augmentation pipelines for person ReID."""
 
 from typing import Tuple, Union
+
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 
@@ -28,7 +29,9 @@ def build_transforms(
 
     if is_train:
         transform_list = [
-            transforms.Resize((height, width), interpolation=InterpolationMode.BILINEAR),
+            transforms.Resize(
+                (height, width), interpolation=InterpolationMode.BILINEAR
+            ),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.Pad(10),
             transforms.RandomCrop((height, width)),
@@ -46,7 +49,9 @@ def build_transforms(
 
     return transforms.Compose(
         [
-            transforms.Resize((height, width), interpolation=InterpolationMode.BILINEAR),
+            transforms.Resize(
+                (height, width), interpolation=InterpolationMode.BILINEAR
+            ),
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std),
         ]

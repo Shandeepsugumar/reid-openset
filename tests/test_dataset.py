@@ -1,8 +1,10 @@
 """Unit tests for Market-1501 dataset parsing and transforms."""
 
 from pathlib import Path
-from PIL import Image
+
 import torch
+from PIL import Image
+
 from reid.data import Market1501, build_transforms
 
 
@@ -29,9 +31,12 @@ def test_transforms_output_shape() -> None:
 
 def test_market1501_real_data_if_present() -> None:
     import os
+
     env_dir = os.environ.get("REID_DATA_ROOT")
     data_dir = Path(env_dir) if env_dir else Path("data")
-    if (data_dir / "Market-1501-v15.09.15").is_dir() or (data_dir / "bounding_box_train").is_dir():
+    if (data_dir / "Market-1501-v15.09.15").is_dir() or (
+        data_dir / "bounding_box_train"
+    ).is_dir():
         ds_train = Market1501(root_dir=data_dir, split="train")
         assert len(ds_train) > 0
         img, pid, cam = ds_train[0]

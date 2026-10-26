@@ -14,11 +14,16 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from reid.eval import compute_closed_set_cmc_and_map, compute_openset_tar_far  # noqa: E402
+from reid.eval import (
+    compute_closed_set_cmc_and_map,
+    compute_openset_tar_far,
+)  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate ReID metrics from saved .npy arrays.")
+    parser = argparse.ArgumentParser(
+        description="Evaluate ReID metrics from saved .npy arrays."
+    )
     parser.add_argument(
         "--embeddings-dir",
         type=str,
@@ -61,10 +66,14 @@ def evaluate_embeddings(
     g_pids = np.load(embeddings_dir / "gallery_pids.npy")
     g_cams = np.load(embeddings_dir / "gallery_camids.npy")
 
-    print(f"[Eval Embeddings] Loaded {len(q_pids)} queries and {len(g_pids)} gallery items from {embeddings_dir}")
+    print(
+        f"[Eval Embeddings] Loaded {len(q_pids)} queries and {len(g_pids)} gallery items from {embeddings_dir}"
+    )
 
     # Closed-set metrics
-    cmc, mAP = compute_closed_set_cmc_and_map(q_feats, q_pids, q_cams, g_feats, g_pids, g_cams)
+    cmc, mAP = compute_closed_set_cmc_and_map(
+        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams
+    )
     print("\n" + "=" * 45)
     print("  CLOSED-SET RE-IDENTIFICATION RESULTS")
     print("=" * 45)
@@ -76,8 +85,14 @@ def evaluate_embeddings(
 
     # Open-set metrics
     openset_results = compute_openset_tar_far(
-        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams,
-        known_ratio=known_ratio, seed=seed
+        q_feats,
+        q_pids,
+        q_cams,
+        g_feats,
+        g_pids,
+        g_cams,
+        known_ratio=known_ratio,
+        seed=seed,
     )
     print("\n" + "=" * 45)
     print("  OPEN-SET PERSON RE-ID METRICS")

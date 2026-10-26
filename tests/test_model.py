@@ -2,6 +2,7 @@
 
 import pytest
 import torch
+
 from reid.models.backbone import ReIDBackbone
 
 
@@ -21,16 +22,17 @@ def test_output_embedding_shape_and_normalization(batch_size: int) -> None:
         embeddings = model(inputs)
 
     # Verify shape
-    assert embeddings.shape == (batch_size, 512), (
-        f"Expected shape ({batch_size}, 512), got {embeddings.shape}"
-    )
+    assert embeddings.shape == (
+        batch_size,
+        512,
+    ), f"Expected shape ({batch_size}, 512), got {embeddings.shape}"
 
     # Verify L2 normalization: ||e_i||_2 == 1.0
     norms = torch.norm(embeddings, p=2, dim=1)
     expected_norms = torch.ones(batch_size)
-    assert torch.allclose(norms, expected_norms, atol=1e-5), (
-        f"Embeddings are not L2 normalized: {norms}"
-    )
+    assert torch.allclose(
+        norms, expected_norms, atol=1e-5
+    ), f"Embeddings are not L2 normalized: {norms}"
 
 
 def test_training_mode_outputs() -> None:

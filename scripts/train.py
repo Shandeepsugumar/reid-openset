@@ -11,7 +11,7 @@ import sys
 import time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np
 import torch
@@ -173,14 +173,18 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
     set_seed(seed)
 
     device_override = args.device if args else None
-    requested_device = device_override or config.get("training", {}).get("device", "cuda")
+    requested_device = device_override or config.get("training", {}).get(
+        "device", "cuda"
+    )
     if requested_device.startswith("cuda") and torch.cuda.is_available():
         device = torch.device(requested_device)
         is_cuda = True
     else:
         device = torch.device("cpu")
         is_cuda = False
-    print(f"[Device] Using device: {device} (CUDA available: {torch.cuda.is_available()})")
+    print(
+        f"[Device] Using device: {device} (CUDA available: {torch.cuda.is_available()})"
+    )
 
     # 3. Epochs and parameters
     train_cfg = config.get("training", {})
@@ -188,7 +192,11 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         total_epochs = int(config.get("smoke_test_epochs", 2))
         smoke_identities = int(config.get("smoke_test_identities", 50))
     else:
-        total_epochs = int(args.epochs) if (args and args.epochs) else int(train_cfg.get("epochs", 60))
+        total_epochs = (
+            int(args.epochs)
+            if (args and args.epochs)
+            else int(train_cfg.get("epochs", 60))
+        )
         smoke_identities = None
 
     # Check for completed run
@@ -230,7 +238,9 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
     batch_size = p * k
     num_workers = int(data_cfg.get("num_workers", 2 if is_cuda else 0))
 
-    print(f"[Data] Loading Market-1501 from {dataset_dir} (Smoke test: {smoke_test})...")
+    print(
+        f"[Data] Loading Market-1501 from {dataset_dir} (Smoke test: {smoke_test})..."
+    )
     train_dataset = Market1501(
         root_dir=dataset_dir,
         split="train",
@@ -288,7 +298,9 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
     def lr_lambda(current_epoch: int) -> float:
         if current_epoch < warmup_epochs:
             return float(current_epoch + 1) / float(max(1, warmup_epochs))
-        progress = float(current_epoch - warmup_epochs) / float(max(1, total_epochs - warmup_epochs))
+        progress = float(current_epoch - warmup_epochs) / float(
+            max(1, total_epochs - warmup_epochs)
+        )
         cosine_decay = 0.5 * (1.0 + math.cos(math.pi * progress))
         return max(min_lr / lr, cosine_decay)
 
@@ -312,7 +324,11 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         if "scheduler_state_dict" in checkpoint:
             scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
-        if scaler and "scaler_state_dict" in checkpoint and checkpoint["scaler_state_dict"] is not None:
+        if (
+            scaler
+            and "scaler_state_dict" in checkpoint
+            and checkpoint["scaler_state_dict"] is not None
+        ):
             scaler.load_state_dict(checkpoint["scaler_state_dict"])
         start_epoch = checkpoint.get("epoch", 0) + 1
         best_loss = checkpoint.get("best_loss", float("inf"))
@@ -337,7 +353,9 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         running = defaultdict(float)
         steps = 0
 
-        pbar = tqdm(train_loader, desc=f"Epoch {epoch:02d}/{total_epochs:02d}", leave=False)
+        pbar = tqdm(
+            train_loader, desc=f"Epoch {epoch:02d}/{total_epochs:02d}", leave=False
+        )
         for images, pids, _ in pbar:
             images = images.to(device, non_blocking=is_cuda)
             pids = pids.to(device, non_blocking=is_cuda)
@@ -360,22 +378,26 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
             for k_m, v_m in metrics.items():
                 running[k_m] += v_m
             steps += 1
-            pbar.set_postfix({"loss": f"{metrics['loss']:.3f}", "ce": f"{metrics['loss_ce']:.3f}"})
+            pbar.set_postfix(
+                {"loss": f"{metrics['loss']:.3f}", "ce": f"{metrics['loss_ce']:.3f}"}
+            )
 
         scheduler.step()
         elapsed = time.time() - t0
-        gpu_mem = (torch.cuda.max_memory_allocated(device) / (1024**3)) if is_cuda else 0.0
+        gpu_mem = (
+            (torch.cuda.max_memory_allocated(device) / (1024**3)) if is_cuda else 0.0
+        )
         cur_lr = optimizer.param_groups[0]["lr"]
 
         avg_loss = running["loss"] / max(1, steps)
         avg_ce = running["loss_ce"] / max(1, steps)
-        avg_tri = running["loss_triplet"] / max(1, steps)
+        avg_triplet = running["loss_triplet"] / max(1, steps)
         avg_ap = running["dist_ap"] / max(1, steps)
         avg_an = running["dist_an"] / max(1, steps)
 
         print(
             f"Epoch [{epoch:03d}/{total_epochs:03d}] "
-            f"Loss: {avg_loss:.4f} (CE: {avg_ce:.4f}, Tri: {avg_tri:.4f}) | "
+            f"Loss: {avg_loss:.4f} (CE: {avg_ce:.4f}, Tri: {avg_triplet:.4f}) | "
             f"d(ap): {avg_ap:.3f}, d(an): {avg_an:.3f} | "
             f"LR: {cur_lr:.6f} | "
             f"{f'GPU Mem: {gpu_mem:.2f}GB | ' if is_cuda else ''}Time: {elapsed:.1f}s"

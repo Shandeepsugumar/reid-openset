@@ -11,10 +11,9 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 import yaml
 from torch.utils.data import DataLoader
@@ -26,7 +25,10 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from reid.data import Market1501  # noqa: E402
-from reid.eval import compute_closed_set_cmc_and_map, compute_openset_tar_far  # noqa: E402
+from reid.eval import (
+    compute_closed_set_cmc_and_map,
+    compute_openset_tar_far,
+)  # noqa: E402
 from reid.models import ReIDBackbone  # noqa: E402
 from scripts.evaluate import extract_split_features  # noqa: E402
 
@@ -101,7 +103,9 @@ def main() -> None:
         config = yaml.safe_load(f)
 
     # Output directory
-    output_dir = Path(args.output_dir) if args.output_dir else (ckpt_dir.parent / "results")
+    output_dir = (
+        Path(args.output_dir) if args.output_dir else (ckpt_dir.parent / "results")
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Find checkpoints matching checkpoint_epoch_*.pth
@@ -114,34 +118,54 @@ def main() -> None:
 
     checkpoints.sort(key=lambda x: x[0])
     if not checkpoints:
-        print(f"[Diagnosis] No checkpoints matching 'checkpoint_epoch_*.pth' found in {ckpt_dir}")
+        print(
+            f"[Diagnosis] No checkpoints matching 'checkpoint_epoch_*.pth' found in {ckpt_dir}"
+        )
         return
 
     print(f"[Diagnosis] Found {len(checkpoints)} checkpoint snapshot(s) in {ckpt_dir}")
 
     # Device
     device_str = args.device or config.get("training", {}).get("device", "cuda")
-    device = torch.device(device_str if torch.cuda.is_available() and device_str.startswith("cuda") else "cpu")
+    device = torch.device(
+        device_str
+        if torch.cuda.is_available() and device_str.startswith("cuda")
+        else "cpu"
+    )
     print(f"[Diagnosis] Using device: {device}")
 
     # Data loaders
-    raw_data_root = args.data_root or os.environ.get("REID_DATA_ROOT") or config.get("data_root", "data")
+    raw_data_root = (
+        args.data_root
+        or os.environ.get("REID_DATA_ROOT")
+        or config.get("data_root", "data")
+    )
     data_folder = Path(raw_data_root)
     if not data_folder.is_absolute():
         data_folder = PROJECT_ROOT / data_folder
 
     image_size = tuple(config.get("data", {}).get("image_size", (256, 128)))
-    num_workers = int(config.get("data", {}).get("num_workers", 2 if device.type == "cuda" else 0))
+    num_workers = int(
+        config.get("data", {}).get("num_workers", 2 if device.type == "cuda" else 0)
+    )
 
     query_set = Market1501(data_folder, split="query", image_size=image_size)
     gallery_set = Market1501(data_folder, split="gallery", image_size=image_size)
     train_set = Market1501(data_folder, split="train", image_size=image_size)
 
     query_loader = DataLoader(
-        query_set, batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=(device.type == "cuda")
+        query_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == "cuda"),
     )
     gallery_loader = DataLoader(
-        gallery_set, batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=(device.type == "cuda")
+        gallery_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == "cuda"),
     )
 
     # Load Model structure
@@ -154,7 +178,11 @@ def main() -> None:
     ).to(device)
 
     # Load train loss history if provided
-    train_csv_path = Path(args.train_csv) if args.train_csv else (ckpt_dir.parent / "train_metrics.csv")
+    train_csv_path = (
+        Path(args.train_csv)
+        if args.train_csv
+        else (ckpt_dir.parent / "train_metrics.csv")
+    )
     train_history = load_train_loss_history(train_csv_path)
 
     # Evaluate each snapshot
@@ -169,13 +197,25 @@ def main() -> None:
         model.load_state_dict(state_dict)
         model.eval()
 
-        q_feats, q_pids, q_cams = extract_split_features(model, query_loader, device, desc=f"Query Ep {epoch}")
-        g_feats, g_pids, g_cams = extract_split_features(model, gallery_loader, device, desc=f"Gallery Ep {epoch}")
+        q_feats, q_pids, q_cams = extract_split_features(
+            model, query_loader, device, desc=f"Query Ep {epoch}"
+        )
+        g_feats, g_pids, g_cams = extract_split_features(
+            model, gallery_loader, device, desc=f"Gallery Ep {epoch}"
+        )
 
-        cmc, mAP = compute_closed_set_cmc_and_map(q_feats, q_pids, q_cams, g_feats, g_pids, g_cams)
+        cmc, mAP = compute_closed_set_cmc_and_map(
+            q_feats, q_pids, q_cams, g_feats, g_pids, g_cams
+        )
         openset_res = compute_openset_tar_far(
-            q_feats, q_pids, q_cams, g_feats, g_pids, g_cams,
-            known_ratio=known_ratio, seed=openset_seed
+            q_feats,
+            q_pids,
+            q_cams,
+            g_feats,
+            g_pids,
+            g_cams,
+            known_ratio=known_ratio,
+            seed=openset_seed,
         )
 
         loss_entry = train_history.get(epoch, {})
@@ -229,7 +269,9 @@ def main() -> None:
     if train_history:
         sorted_epochs = sorted(train_history.keys())
         losses = [train_history[e]["loss"] for e in sorted_epochs]
-        ax1.plot(sorted_epochs, losses, color="purple", label="Total Training Loss", lw=2)
+        ax1.plot(
+            sorted_epochs, losses, color="purple", label="Total Training Loss", lw=2
+        )
         ax1.set_ylabel("Training Loss")
         ax1.set_title("Training Loss Dynamics across Epochs")
         ax1.grid(True, linestyle=":", alpha=0.6)
@@ -240,8 +282,22 @@ def main() -> None:
     # Plot test metrics
     ax2.plot(epochs, r1s, marker="o", label="Rank-1 (%)", color="#1f77b4")
     ax2.plot(epochs, maps, marker="s", label="mAP (%)", color="#2ca02c")
-    ax2.plot(epochs, far80s, marker="^", label="FAR @ TAR=80% (%)", color="#ff7f0e", linestyle="--")
-    ax2.plot(epochs, far90s, marker="v", label="FAR @ TAR=90% (%)", color="#d62728", linestyle="--")
+    ax2.plot(
+        epochs,
+        far80s,
+        marker="^",
+        label="FAR @ TAR=80% (%)",
+        color="#ff7f0e",
+        linestyle="--",
+    )
+    ax2.plot(
+        epochs,
+        far90s,
+        marker="v",
+        label="FAR @ TAR=90% (%)",
+        color="#d62728",
+        linestyle="--",
+    )
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel("Metric (%)")
     ax2.set_title("Evaluation Performance Trends (Diagnostic Only)")

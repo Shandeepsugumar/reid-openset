@@ -1,6 +1,5 @@
 """Pre-commit guard to prevent committing large files, datasets, weights, or secrets."""
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -76,7 +75,9 @@ def check_file(
 
     # 2. Forbidden binary/model/dataset extensions
     # Handle compound extensions like .tar.gz
-    double_suffix = "".join(path_obj.suffixes[-2:]).lower() if len(path_obj.suffixes) >= 2 else ""
+    double_suffix = (
+        "".join(path_obj.suffixes[-2:]).lower() if len(path_obj.suffixes) >= 2 else ""
+    )
     if suffix in FORBIDDEN_EXTENSIONS or double_suffix in FORBIDDEN_EXTENSIONS:
         ext = double_suffix if double_suffix in FORBIDDEN_EXTENSIONS else suffix
         return False, f"Forbidden large/binary file extension '{ext}'"

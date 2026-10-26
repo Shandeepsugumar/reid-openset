@@ -1,9 +1,8 @@
 """PK Sampler for metric learning and person re-identification."""
 
-import copy
 import random
 from collections import defaultdict
-from typing import Iterator, List, Optional, Sequence, Union
+from typing import Iterator, Optional, Sequence, Union
 
 import numpy as np
 from torch.utils.data import Dataset, Sampler
@@ -102,7 +101,9 @@ class PKSampler(Sampler[int]):
                 if len(indices) >= self.k:
                     sampled = random.sample(indices, self.k)
                 else:
-                    sampled = np.random.choice(indices, size=self.k, replace=True).tolist()
+                    sampled = np.random.choice(
+                        indices, size=self.k, replace=True
+                    ).tolist()
                 batch_indices.extend(sampled)
 
         return iter(batch_indices)

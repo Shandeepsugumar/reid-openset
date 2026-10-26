@@ -1,7 +1,6 @@
 """Unit tests for check_repo_files.py hygiene validator."""
 
-from pathlib import Path
-from scripts.check_repo_files import check_file, MAX_FILE_SIZE_BYTES
+from scripts.check_repo_files import MAX_FILE_SIZE_BYTES, check_file
 
 
 def test_normal_files_allowed() -> None:
@@ -22,10 +21,14 @@ def test_normal_files_allowed() -> None:
 
 def test_large_file_blocked() -> None:
     # Exactly 5MB should pass; 5MB + 1 byte must fail
-    is_valid_at_limit, _ = check_file("big_code.py", file_size_bytes=MAX_FILE_SIZE_BYTES)
+    is_valid_at_limit, _ = check_file(
+        "big_code.py", file_size_bytes=MAX_FILE_SIZE_BYTES
+    )
     assert is_valid_at_limit
 
-    is_valid_over_limit, reason = check_file("huge_archive.iso", file_size_bytes=MAX_FILE_SIZE_BYTES + 1)
+    is_valid_over_limit, reason = check_file(
+        "huge_archive.iso", file_size_bytes=MAX_FILE_SIZE_BYTES + 1
+    )
     assert not is_valid_over_limit
     assert "exceeds" in reason
 

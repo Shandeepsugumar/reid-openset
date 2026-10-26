@@ -1,10 +1,12 @@
 """Unit tests for training utilities, checkpoint resumption, and CSV logging."""
 
 from pathlib import Path
+
 import pytest
 import torch
-from scripts.train import CSVMetricLogger, load_config, compute_config_hash, train
+
 from reid.models import ReIDBackbone
+from scripts.train import CSVMetricLogger, compute_config_hash, load_config, train
 
 
 def test_load_config() -> None:

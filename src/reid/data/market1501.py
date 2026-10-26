@@ -134,7 +134,7 @@ class Market1501(Dataset):
 
         # Map person IDs to contiguous indices [0, num_classes-1] if relabel is requested
         if self.relabel:
-            sorted_pids = sorted(list(pids_set))
+            sorted_pids = sorted(pids_set)
             if self.smoke_test:
                 sorted_pids = sorted_pids[: self.smoke_identities]
                 valid_pids = set(sorted_pids)

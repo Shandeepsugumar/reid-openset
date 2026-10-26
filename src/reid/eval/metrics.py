@@ -1,6 +1,7 @@
 """Evaluation metrics for person re-identification (closed-set and open-set)."""
 
 from typing import Dict, Tuple
+
 import numpy as np
 
 
@@ -41,7 +42,9 @@ def compute_closed_set_cmc_and_map(
         cam = q_cams[i]
 
         order = np.argsort(-sim_mat[i])
-        valid_mask = ~((g_pids[order] == pid) & (g_cams[order] == cam)) & (g_pids[order] != -1)
+        valid_mask = ~((g_pids[order] == pid) & (g_cams[order] == cam)) & (
+            g_pids[order] != -1
+        )
         order = order[valid_mask]
 
         matches = (g_pids[order] == pid).astype(np.int32)
@@ -52,7 +55,7 @@ def compute_closed_set_cmc_and_map(
         cmc = np.zeros(max_rank)
         first_match_idx = np.where(matches == 1)[0]
         if len(first_match_idx) > 0 and first_match_idx[0] < max_rank:
-            cmc[first_match_idx[0]:] = 1.0
+            cmc[first_match_idx[0] :] = 1.0
         all_cmc.append(cmc)
 
         cum_matches = np.cumsum(matches)
@@ -125,7 +128,7 @@ def compute_openset_tar_far(
         valid_pids = sub_g_pids[valid_mask]
         best_idx = np.argmax(valid_sims)
         max_score = valid_sims[best_idx]
-        is_rank1 = (valid_pids[best_idx] == pid)
+        is_rank1 = valid_pids[best_idx] == pid
 
         if pid in enrolled_pids:
             target_scores.append(max_score)
@@ -141,7 +144,9 @@ def compute_openset_tar_far(
     far_list, tar_list = [], []
 
     for tau in thresholds:
-        far = float(np.mean(impostor_scores >= tau)) if len(impostor_scores) > 0 else 0.0
+        far = (
+            float(np.mean(impostor_scores >= tau)) if len(impostor_scores) > 0 else 0.0
+        )
         tar = (
             float(np.mean((target_scores >= tau) & target_correct_rank1))
             if len(target_scores) > 0

@@ -22,7 +22,10 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from reid.data import Market1501  # noqa: E402
-from reid.eval import compute_closed_set_cmc_and_map, compute_openset_tar_far  # noqa: E402
+from reid.eval import (
+    compute_closed_set_cmc_and_map,
+    compute_openset_tar_far,
+)  # noqa: E402
 from reid.models import ReIDBackbone  # noqa: E402
 
 
@@ -69,7 +72,7 @@ def extract_split_features(
     desc: str = "Extracting",
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     model.eval()
-    is_cuda = (device.type == "cuda")
+    is_cuda = device.type == "cuda"
     embeddings_list, pids_list, camids_list = [], [], []
 
     for images, pids, camids in tqdm(loader, desc=desc, leave=False):
@@ -91,7 +94,11 @@ def extract_split_features(
     )
 
 
-def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Optional[argparse.Namespace] = None) -> Dict:
+def evaluate(
+    config_path: str,
+    checkpoint_path: Optional[str] = None,
+    args: Optional[argparse.Namespace] = None,
+) -> Dict:
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
@@ -122,7 +129,9 @@ def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Opti
         raise FileNotFoundError(f"Checkpoint file not found: {ckpt_file}")
 
     # Device
-    device_name = (args.device if args else None) or config.get("training", {}).get("device", "cuda")
+    device_name = (args.device if args else None) or config.get("training", {}).get(
+        "device", "cuda"
+    )
     if device_name.startswith("cuda") and torch.cuda.is_available():
         device = torch.device(device_name)
     else:
@@ -140,17 +149,29 @@ def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Opti
         data_folder = PROJECT_ROOT / data_folder
 
     image_size = tuple(config.get("data", {}).get("image_size", (256, 128)))
-    num_workers = int(config.get("data", {}).get("num_workers", 2 if device.type == "cuda" else 0))
+    num_workers = int(
+        config.get("data", {}).get("num_workers", 2 if device.type == "cuda" else 0)
+    )
 
     query_set = Market1501(root_dir=data_folder, split="query", image_size=image_size)
-    gallery_set = Market1501(root_dir=data_folder, split="gallery", image_size=image_size)
+    gallery_set = Market1501(
+        root_dir=data_folder, split="gallery", image_size=image_size
+    )
     train_set = Market1501(root_dir=data_folder, split="train", image_size=image_size)
 
     query_loader = DataLoader(
-        query_set, batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=(device.type == "cuda")
+        query_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == "cuda"),
     )
     gallery_loader = DataLoader(
-        gallery_set, batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=(device.type == "cuda")
+        gallery_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == "cuda"),
     )
 
     # Model
@@ -170,9 +191,13 @@ def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Opti
 
     # Extract Features
     print("[Eval] Extracting query embeddings...")
-    q_feats, q_pids, q_cams = extract_split_features(model, query_loader, device, desc="Query Set")
+    q_feats, q_pids, q_cams = extract_split_features(
+        model, query_loader, device, desc="Query Set"
+    )
     print("[Eval] Extracting gallery embeddings...")
-    g_feats, g_pids, g_cams = extract_split_features(model, gallery_loader, device, desc="Gallery Set")
+    g_feats, g_pids, g_cams = extract_split_features(
+        model, gallery_loader, device, desc="Gallery Set"
+    )
 
     # Save .npy arrays
     np.save(embeddings_dir / "query_embeddings.npy", q_feats)
@@ -184,7 +209,9 @@ def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Opti
     print(f"[Eval] Embeddings saved to: {embeddings_dir}")
 
     # Closed-set metrics
-    cmc, mAP = compute_closed_set_cmc_and_map(q_feats, q_pids, q_cams, g_feats, g_pids, g_cams)
+    cmc, mAP = compute_closed_set_cmc_and_map(
+        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams
+    )
     print("\n" + "=" * 45)
     print("  CLOSED-SET RE-IDENTIFICATION RESULTS")
     print("=" * 45)
@@ -200,8 +227,14 @@ def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Opti
     openset_seed = int(openset_cfg.get("seed", 42))
 
     openset_results = compute_openset_tar_far(
-        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams,
-        known_ratio=known_ratio, seed=openset_seed
+        q_feats,
+        q_pids,
+        q_cams,
+        g_feats,
+        g_pids,
+        g_cams,
+        known_ratio=known_ratio,
+        seed=openset_seed,
     )
     print("\n" + "=" * 45)
     print("  OPEN-SET PERSON RE-ID METRICS")
@@ -216,10 +249,34 @@ def evaluate(config_path: str, checkpoint_path: Optional[str] = None, args: Opti
     # Save ROC plot
     roc_plot_path = results_dir / "roc_curve.png"
     plt.figure(figsize=(7, 6), dpi=150)
-    plt.plot(openset_results["far"], openset_results["tar"], color="#1f77b4", lw=2, label="Open-Set ReID ROC")
-    plt.axvline(openset_results["far_at_tar_80"], color="gray", linestyle="--", alpha=0.6, label="TAR = 80%")
-    plt.axvline(openset_results["far_at_tar_90"], color="orange", linestyle="--", alpha=0.6, label="TAR = 90%")
-    plt.axvline(openset_results["far_at_tar_95"], color="red", linestyle="--", alpha=0.6, label="TAR = 95%")
+    plt.plot(
+        openset_results["far"],
+        openset_results["tar"],
+        color="#1f77b4",
+        lw=2,
+        label="Open-Set ReID ROC",
+    )
+    plt.axvline(
+        openset_results["far_at_tar_80"],
+        color="gray",
+        linestyle="--",
+        alpha=0.6,
+        label="TAR = 80%",
+    )
+    plt.axvline(
+        openset_results["far_at_tar_90"],
+        color="orange",
+        linestyle="--",
+        alpha=0.6,
+        label="TAR = 90%",
+    )
+    plt.axvline(
+        openset_results["far_at_tar_95"],
+        color="red",
+        linestyle="--",
+        alpha=0.6,
+        label="TAR = 95%",
+    )
     plt.title("Open-Set ReID: Detection & Identification Rate (TAR) vs FAR")
     plt.xlabel("False Alarm Rate (FAR)")
     plt.ylabel("True Accept Rate / Rank-1 Identification (TAR)")

@@ -45,10 +45,34 @@ where = ["src"]
 [tool.black]
 line-length = 88
 target-version = ["py39", "py310", "py311"]
+extend-exclude = '''
+/(
+  colab
+  | notebooks
+)/
+'''
 
 [tool.ruff]
 line-length = 88
 target-version = "py39"
+extend-exclude = ["colab", "notebooks"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line length handled by black
+    "B008",  # function call in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

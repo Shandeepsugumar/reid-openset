@@ -28,6 +28,9 @@ def weights_init_classifier(m: nn.Module) -> None:
             nn.init.constant_(m.bias, 0.0)
 
 
+from reid.losses.margin import MarginSoftmaxHead
+
+
 class ReIDBackbone(nn.Module):
     """Backbone wrapper for Person Re-Identification.
 
@@ -46,6 +49,9 @@ class ReIDBackbone(nn.Module):
         pretrained: Whether to load ImageNet pre-trained weights.
         neck_feat: Which feature to normalize for inference ('before' or 'after' BNNeck).
                    Default is 'after'.
+        classifier_type: Classification head type ('linear', 'cosface', 'arcface'). Default: 'linear'.
+        margin_s: Feature scale for margin softmax (default: 30.0).
+        margin_m: Margin penalty for margin softmax (default: 0.35).
     """
 
     def __init__(
@@ -55,12 +61,18 @@ class ReIDBackbone(nn.Module):
         num_classes: Optional[int] = None,
         pretrained: bool = False,
         neck_feat: str = "after",
+        classifier_type: str = "linear",
+        margin_s: float = 30.0,
+        margin_m: float = 0.35,
     ) -> None:
         super().__init__()
         self.backbone_name = backbone_name
         self.embedding_dim = embedding_dim
         self.num_classes = num_classes
         self.neck_feat = neck_feat
+        self.classifier_type = classifier_type.lower()
+        self.margin_s = float(margin_s)
+        self.margin_m = float(margin_m)
 
         # Load torchvision model
         if not hasattr(tv_models, backbone_name):
@@ -101,8 +113,17 @@ class ReIDBackbone(nn.Module):
 
         # Classification head for ID loss
         if num_classes is not None and num_classes > 0:
-            self.classifier = nn.Linear(embedding_dim, num_classes, bias=False)
-            self.classifier.apply(weights_init_classifier)
+            if self.classifier_type in ("cosface", "arcface"):
+                self.classifier = MarginSoftmaxHead(
+                    embedding_dim=embedding_dim,
+                    num_classes=num_classes,
+                    s=self.margin_s,
+                    m=self.margin_m,
+                    kind=self.classifier_type,
+                )
+            else:
+                self.classifier = nn.Linear(embedding_dim, num_classes, bias=False)
+                self.classifier.apply(weights_init_classifier)
         else:
             self.classifier = None
 
@@ -126,7 +147,10 @@ class ReIDBackbone(nn.Module):
         return feat, feat_bn, norm_feat
 
     def forward(
-        self, x: torch.Tensor, return_all: bool = False
+        self,
+        x: torch.Tensor,
+        targets: Optional[torch.Tensor] = None,
+        return_all: bool = False,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor], dict]:
         """Forward pass.
 
@@ -136,7 +160,13 @@ class ReIDBackbone(nn.Module):
         """
         feat, feat_bn, norm_feat = self.extract_features(x)
 
-        logits = self.classifier(feat_bn) if self.classifier is not None else None
+        if self.classifier is not None:
+            if isinstance(self.classifier, MarginSoftmaxHead):
+                logits = self.classifier(feat_bn, targets)
+            else:
+                logits = self.classifier(feat_bn)
+        else:
+            logits = None
 
         if return_all:
             return {

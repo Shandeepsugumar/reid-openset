@@ -84,8 +84,11 @@ When queried for $\text{TAR} = 95\%$, no threshold $\tau \in [-0.2, 1.0]$ satisf
 
 ## 5. Stored Artifacts
 
-- **Model Checkpoint**: `latest_checkpoint.pth` (recorded in `results/baseline_resnet18/eval_results.json`)
+- **Model Checkpoints**: `checkpoints/checkpoint_epoch_060.pth` (final epoch snapshot evaluated for baseline) and `checkpoints/latest_checkpoint.pth` (recorded in `results/baseline_resnet18/eval_results.json`)
 - **Metric Logs**: `results/baseline_resnet18/train_metrics.csv`
+
+> [!NOTE]
+> Training saves `latest_checkpoint.pth` every epoch for auto-resumption and saves epoch snapshots `checkpoint_epoch_0<epoch>.pth` (at epochs 10, 20, 30, 40, 50, and 60). Baseline evaluation is performed strictly on the final epoch snapshot (`checkpoint_epoch_060.pth`), never on a "best" checkpoint chosen by test-set metrics, strictly preventing test-set data leakage.
 - **ROC Curve Plot**: `results/baseline_resnet18/roc_curve.png`
 - **Summary JSON**: `results/baseline_resnet18/eval_results.json`
 - **Query Embeddings**: `artifacts/baseline_resnet18/query_embeddings.npy` ($3,368 \times 512$)

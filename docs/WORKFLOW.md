@@ -70,3 +70,22 @@ All development, experimentation, and maintenance tasks within this repository m
 - **Hygiene Verification**:
   - The repository has an active pre-commit hook in `.githooks/pre-commit` configured via `core.hooksPath`.
   - Staged files exceeding 5 MB or carrying forbidden extensions are automatically blocked.
+
+---
+
+## 5. Google Colab & Remote Runtime Rules
+
+- **Colab Only Pulls**:
+  - The Google Colab runtime is strictly an execution, training, and evaluation environment.
+  - Colab environments must **never push** to the remote repository.
+  - All git operations in Colab are strictly read-only (`git clone` and `git pull`).
+- **All Commits Made Locally**:
+  - All code edits, refactors, configuration additions, documentation updates, and git commits must originate exclusively from your local development machine.
+- **Token & Secret Safety**:
+  - Never embed a personal access token (PAT) in a clone URL (`https://<token>@github.com/...`).
+  - Never print or echo credentials in Colab cell outputs or logs.
+  - For private repositories, retrieve `GITHUB_PAT` securely from Colab Secrets (`google.colab.userdata`) and pass it transiently in-memory via `git -c http.extraheader="AUTHORIZATION: basic <base64>"` so it is never written to `.git/config` or disk.
+  - For public repositories, clone using standard anonymous HTTPS without tokens.
+- **Output Resilience**:
+  - Direct all training checkpoints, metric logs, and evaluation artifacts to Google Drive under `/content/drive/MyDrive/reid_openset/runs/<exp_name>/` via `--output-root`.
+  - In case of a Colab timeout or disconnect, at most one epoch is lost, and re-running automatically resumes from `checkpoints/latest_checkpoint.pth`.

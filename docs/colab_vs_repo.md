@@ -55,3 +55,11 @@ Per project requirements, where behavior differences exist, the **Colab implemen
 ### 3. MultiProcessing DataLoader Child Process Teardown Warning
 - **Observation**: Python 3.13 / Colab logged `AssertionError: can only test a child process` during garbage collection of `_MultiProcessingDataLoaderIter.__del__`.
 - **Resolution**: Harmless warning during interpreter exit; mitigated by graceful dataloader iteration and `persistent_workers` scoping.
+
+### 4. Open-Set Evaluation Nuances & Matching Protocol Details
+- **Normal Split Variance**: The single-seed (seed 42) result of $\text{FAR@TAR=90\%} = 37.37\%$ versus the 5-seed mean of $39.34\% \pm 4.01\%$ is within expected normal partition noise ($|37.37 - 39.34| = 1.97\% < 1\,\sigma$).
+- **Single Model Split Variation**: The $\pm \text{std}$ across seeds reflects only the variation over random enrolled/unknown query identity partitions of the *single* trained baseline model, not training-seed variation.
+- **Gallery Junk vs. Distractor Treatment**: During matching time (in both closed-set and open-set protocols):
+  - Junk images (`pid == -1`) and same-identity same-camera pairs are discarded from the candidate gallery pool (`g_pids != -1`).
+  - Distractor images (`pid == 0`, false-alarm DPM bounding boxes) are **retained** in the gallery pool and act as negative distractors during retrieval.
+- **Score-Only AUC and EER**: Open-set ROC AUC and EER are score-only metrics evaluated on the binary discrimination between enrolled probe max-similarity scores and impostor probe max-similarity scores; they do not check whether the retrieved gallery identity matches the genuine probe identity.

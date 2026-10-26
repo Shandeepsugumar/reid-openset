@@ -1,0 +1,33 @@
+# Configuration for Open-Set Person ReID
+
+model:
+  backbone: "resnet18"
+  embedding_dim: 512
+  pretrained: false
+  neck_feat: "after"
+
+data:
+  dataset_dir: "data"
+  image_size: [256, 128]  # [height, width]
+  p: 16                   # Number of identities per batch
+  k: 4                    # Number of images per identity
+  num_workers: 0          # Set to 0 for Windows/multiprocessing compatibility
+
+loss:
+  margin: 0.3
+  label_smoothing: 0.1
+  weight_ce: 1.0
+  weight_triplet: 1.0
+  soft_margin: false
+
+training:
+  epochs: 60
+  lr: 0.00035
+  weight_decay: 0.0005
+  use_amp: true           # Mixed precision training
+  device: "cuda"          # Automatically falls back to cpu if cuda unavailable
+  checkpoint_dir: "checkpoints"
+  checkpoint_filename: "latest_checkpoint.pth"
+  save_epoch_freq: 1      # Save checkpoint every epoch
+  csv_log_path: "logs/train_metrics.csv"
+  resume: true            # Automatically resume from latest checkpoint if exists

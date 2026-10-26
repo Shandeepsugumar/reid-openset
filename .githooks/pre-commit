@@ -1,0 +1,16 @@
+#!/bin/sh
+# Pre-commit hook to verify staged files for size, binary models, and secrets
+
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_EXEC="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_EXEC="python"
+elif command -v py >/dev/null 2>&1; then
+    PYTHON_EXEC="py -3"
+else
+    echo "ERROR: Python executable not found on PATH. Cannot run pre-commit hygiene checks."
+    exit 1
+fi
+
+"$PYTHON_EXEC" scripts/check_repo_files.py
+exit $?

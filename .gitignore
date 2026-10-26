@@ -1,0 +1,114 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller / installers
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Linters & Formatters
+.ruff_cache/
+.mypy_cache/
+
+# Large Archives & Compressed files
+*.zip
+*.7z
+*.tar
+*.tar.gz
+archive*/
+
+# Model checkpoints, weights, and exported models
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+*.bin
+weights/
+checkpoints/
+
+# Embeddings, serialization & NumPy arrays
+*.npy
+*.npz
+*.pkl
+
+# Datasets and experiment outputs / runs
+data/
+datasets/
+Market-1501*/
+artifacts/
+outputs/
+runs/
+logs/
+*.log
+wandb/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Secrets, private credentials, and environment files
+.env
+.env.*
+*.key
+*.pem
+secrets*
+*token*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini

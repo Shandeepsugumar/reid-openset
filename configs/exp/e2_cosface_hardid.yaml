@@ -1,0 +1,55 @@
+# CosFace + Identity-Level Hard Negative Sampler
+exp_name: "e2_cosface_hardid"
+
+data_root: "data/Market-1501-v15.09.15"
+output_root: "outputs"
+
+smoke_test: false
+smoke_test_identities: 50
+smoke_test_epochs: 2
+
+model:
+  backbone: "resnet18"
+  embedding_dim: 512
+  pretrained: true
+  neck_feat: "after"
+
+data:
+  image_size: [256, 128]
+  p: 16
+  k: 4
+  num_workers: 2
+  seed: 42
+  val_identities: 100
+  val_seed: 42
+  sampler: "hard_identity"
+  hard_sampler:
+    group_size: 4
+    m_neighbors: 12
+    refresh_every: 5
+    mining_start_epoch: 10
+
+training:
+  epochs: 60
+  warmup_epochs: 5
+  val_every: 5
+  lr: 0.00035
+  min_lr: 0.000001
+  weight_decay: 0.0005
+  use_amp: true
+  device: "cuda"
+
+loss:
+  cls: "cosface"
+  margin_m: 0.35
+  scale_s: 30.0
+  margin_warmup_epochs: 10
+  margin: 0.3
+  label_smoothing: 0.0
+  weight_ce: 1.0
+  weight_triplet: 1.0
+
+openset:
+  known_ratio: 0.5
+  seed: 42
+  seeds: [0, 1, 2, 3, 4]

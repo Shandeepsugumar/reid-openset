@@ -351,12 +351,13 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         with open(val_pids_path, "w", encoding="utf-8") as f:
             json.dump(
                 {
-                    "val_identities": train_dataset.heldout_val_pids,
-                    "val_seed": val_seed,
-                    "num_val_identities": val_identities,
+                    "val_identities": [int(x) for x in train_dataset.heldout_val_pids],
+                    "val_seed": int(val_seed),
+                    "num_val_identities": int(val_identities),
                 },
                 f,
                 indent=2,
+                default=int,
             )
 
         val_q_set = Market1501(
@@ -419,15 +420,24 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
     else:
         sampler = PKSampler(train_dataset, p=p, k=k)
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        sampler=sampler,
-        num_workers=num_workers,
-        pin_memory=is_cuda,
-        persistent_workers=(num_workers > 0),
-        drop_last=True,
-    )
+    if sampler_type == "hard_identity":
+        train_loader = DataLoader(
+            train_dataset,
+            batch_sampler=sampler,
+            num_workers=num_workers,
+            pin_memory=is_cuda,
+            persistent_workers=(num_workers > 0),
+        )
+    else:
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=num_workers,
+            pin_memory=is_cuda,
+            persistent_workers=(num_workers > 0),
+            drop_last=True,
+        )
 
     # 5. Model Architecture & Margin Config
     loss_cfg = config.get("loss", {})

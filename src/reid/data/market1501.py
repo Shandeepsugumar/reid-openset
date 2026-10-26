@@ -155,15 +155,16 @@ class Market1501(Dataset):
                 all_pids = all_pids[: self.smoke_identities]
                 valid_smoke_pids = set(all_pids)
                 raw_samples = [s for s in raw_samples if s[1] in valid_smoke_pids]
-
-            n_val = min(self.val_identities, len(all_pids) - 1)
+                n_val = min(self.val_identities, max(1, len(all_pids) // 5))
+            else:
+                n_val = min(self.val_identities, len(all_pids) - 1)
             rng = np.random.RandomState(self.val_seed)
             shuffled_pids = rng.permutation(all_pids)
             heldout_val_set = set(shuffled_pids[:n_val])
             active_train_set = set(shuffled_pids[n_val:])
 
-            self.heldout_val_pids = sorted(heldout_val_set)
-            self.train_pids = sorted(active_train_set)
+            self.heldout_val_pids = [int(p) for p in sorted(heldout_val_set)]
+            self.train_pids = [int(p) for p in sorted(active_train_set)]
 
             if self.split == "train":
                 raw_samples = [s for s in raw_samples if s[1] in active_train_set]

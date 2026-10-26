@@ -7,6 +7,7 @@ from scripts.check_repo_files import check_file, MAX_FILE_SIZE_BYTES
 def test_normal_files_allowed() -> None:
     valid_cases = [
         "src/reid/models/backbone.py",
+        "src/reid/data/market1501.py",
         "configs/default.yaml",
         "README.md",
         "pyproject.toml",

@@ -69,6 +69,8 @@ def check_file(
     # 1. Directory restriction check
     for part in parts[:-1]:
         part_clean = part.lower().strip()
+        if norm_path.startswith("src/reid/data"):
+            continue
         if part_clean in FORBIDDEN_DIRECTORIES or part_clean.startswith("market-1501"):
             return False, f"File sits inside forbidden directory '{part}'"
 

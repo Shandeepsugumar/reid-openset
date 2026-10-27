@@ -30,6 +30,8 @@ COLUMNS = [
     "Test DIR@FAR=1%",
     "Test DIR@FAR=5%",
     "Test max TAR",
+    "Lookalike FAR@TAR=80",
+    "Lookalike DIR@FAR=1%",
 ]
 
 
@@ -172,6 +174,35 @@ def read_test_metrics(exp_dirs: List[Path]) -> Dict[str, str]:
     }
 
 
+def read_lookalike_metrics(exp_dirs: List[Path]) -> Dict[str, str]:
+    """Read look-alike evaluation metrics from lookalike_v2.json."""
+    for exp_dir in exp_dirs:
+        candidate_paths = [
+            exp_dir / "lookalike_v2.json",
+            exp_dir / "results" / "lookalike_v2.json",
+        ]
+        for p in candidate_paths:
+            if p.is_file():
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    summary = data.get("lookalike_protocol", {}).get("summary", {})
+                    return {
+                        "Lookalike FAR@TAR=80": _format_stat(
+                            summary.get("far_at_tar_80")
+                        ),
+                        "Lookalike DIR@FAR=1%": _format_stat(
+                            summary.get("dir_at_far_1")
+                        ),
+                    }
+                except Exception:
+                    pass
+    return {
+        "Lookalike FAR@TAR=80": "not run",
+        "Lookalike DIR@FAR=1%": "not run",
+    }
+
+
 def aggregate_all(output_root: Path) -> List[Dict[str, str]]:
     rows = []
     for exp_name in EXPERIMENTS:
@@ -185,8 +216,10 @@ def aggregate_all(output_root: Path) -> List[Dict[str, str]]:
         row = {"Experiment": exp_name}
         val_res = read_val_metrics(candidate_dirs)
         test_res = read_test_metrics(candidate_dirs)
+        lk_res = read_lookalike_metrics(candidate_dirs)
         row.update(val_res)
         row.update(test_res)
+        row.update(lk_res)
         rows.append(row)
     return rows
 

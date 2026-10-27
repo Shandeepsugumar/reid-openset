@@ -1,0 +1,133 @@
+--- STARTING FULL TRAINING (RUN_MODE='train') ---
+[Device] Using device: cuda (CUDA available: True)
+[Data] Loading Market-1501 from /content/data/Market-1501-v15.09.15 (Smoke test: False, Val IDs: 100)...
+[Data] Train set: 11024 images, 651 identities, batch size = P(16) x K(4) = 64
+[Data] Val set: 399 queries, 1513 gallery images from 100 held-out IDs
+
+=================================================================
+--- STARTING TRAINING: e0_baseline_val ---
+Total Epochs: 60 | Device: cuda | AMP: True
+Artifacts: /content/drive/MyDrive/reid_openset/runs/e0_baseline_val
+=================================================================
+Epoch [001/060] Loss: 6.7744 (CE: 6.3920, Tri: 0.3824) | d(ap): 1.331, d(an): 1.250 | LR: 0.000140 | GPU Mem: 0.72GB | Time: 25.2s
+Epoch [002/060] Loss: 6.0534 (CE: 5.7827, Tri: 0.2708) | d(ap): 1.007, d(an): 1.059 | LR: 0.000210 | GPU Mem: 0.72GB | Time: 24.4s
+Epoch [003/060] Loss: 4.9585 (CE: 4.7676, Tri: 0.1909) | d(ap): 0.860, d(an): 1.018 | LR: 0.000280 | GPU Mem: 0.72GB | Time: 27.0s
+Epoch [004/060] Loss: 3.8658 (CE: 3.7279, Tri: 0.1379) | d(ap): 0.827, d(an): 1.060 | LR: 0.000350 | GPU Mem: 0.72GB | Time: 26.8s
+Epoch [005/060] Loss: 3.0250 (CE: 2.9001, Tri: 0.1249) | d(ap): 0.846, d(an): 1.096 | LR: 0.000350 | GPU Mem: 0.72GB | Time: 27.4s
+[Validation] Evaluating held-out validation split at Epoch 005...
+[Validation Epoch 005] Rank-1: 92.73% | mAP: 82.38% | FAR@TAR80: 8.98% | DIR@FAR1: 47.96% | max TAR: 94.83%
+Epoch [006/060] Loss: 2.3406 (CE: 2.2454, Tri: 0.0952) | d(ap): 0.849, d(an): 1.136 | LR: 0.000350 | GPU Mem: 0.79GB | Time: 27.1s
+Epoch [007/060] Loss: 1.9240 (CE: 1.8459, Tri: 0.0780) | d(ap): 0.855, d(an): 1.162 | LR: 0.000349 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [008/060] Loss: 1.7432 (CE: 1.6695, Tri: 0.0738) | d(ap): 0.866, d(an): 1.177 | LR: 0.000347 | GPU Mem: 0.79GB | Time: 26.7s
+Epoch [009/060] Loss: 1.6502 (CE: 1.5774, Tri: 0.0728) | d(ap): 0.881, d(an): 1.186 | LR: 0.000345 | GPU Mem: 0.79GB | Time: 27.0s
+Epoch [010/060] Loss: 1.5470 (CE: 1.4827, Tri: 0.0643) | d(ap): 0.880, d(an): 1.197 | LR: 0.000343 | GPU Mem: 0.79GB | Time: 27.0s
+[Validation] Evaluating held-out validation split at Epoch 010...
+[Validation Epoch 010] Rank-1: 93.98% | mAP: 82.10% | FAR@TAR80: 5.75% | DIR@FAR1: 58.53% | max TAR: 95.52%
+Epoch [011/060] Loss: 1.5092 (CE: 1.4455, Tri: 0.0637) | d(ap): 0.888, d(an): 1.203 | LR: 0.000340 | GPU Mem: 0.79GB | Time: 27.2s
+Epoch [012/060] Loss: 1.4770 (CE: 1.4148, Tri: 0.0622) | d(ap): 0.889, d(an): 1.210 | LR: 0.000336 | GPU Mem: 0.79GB | Time: 27.3s
+Epoch [013/060] Loss: 1.4528 (CE: 1.3941, Tri: 0.0587) | d(ap): 0.897, d(an): 1.217 | LR: 0.000332 | GPU Mem: 0.79GB | Time: 27.0s
+Epoch [014/060] Loss: 1.4107 (CE: 1.3559, Tri: 0.0548) | d(ap): 0.894, d(an): 1.221 | LR: 0.000327 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [015/060] Loss: 1.3935 (CE: 1.3389, Tri: 0.0546) | d(ap): 0.894, d(an): 1.225 | LR: 0.000322 | GPU Mem: 0.79GB | Time: 27.0s
+[Validation] Evaluating held-out validation split at Epoch 015...
+[Validation Epoch 015] Rank-1: 95.74% | mAP: 84.25% | FAR@TAR80: 4.73% | DIR@FAR1: 69.01% | max TAR: 96.42%
+Epoch [016/060] Loss: 1.3729 (CE: 1.3243, Tri: 0.0486) | d(ap): 0.891, d(an): 1.230 | LR: 0.000317 | GPU Mem: 0.79GB | Time: 26.5s
+Epoch [017/060] Loss: 1.3522 (CE: 1.3061, Tri: 0.0461) | d(ap): 0.891, d(an): 1.235 | LR: 0.000310 | GPU Mem: 0.79GB | Time: 26.6s
+Epoch [018/060] Loss: 1.3309 (CE: 1.2875, Tri: 0.0434) | d(ap): 0.886, d(an): 1.235 | LR: 0.000304 | GPU Mem: 0.79GB | Time: 26.4s
+Epoch [019/060] Loss: 1.3217 (CE: 1.2795, Tri: 0.0422) | d(ap): 0.887, d(an): 1.239 | LR: 0.000297 | GPU Mem: 0.79GB | Time: 26.6s
+Epoch [020/060] Loss: 1.3240 (CE: 1.2787, Tri: 0.0453) | d(ap): 0.887, d(an): 1.237 | LR: 0.000290 | GPU Mem: 0.79GB | Time: 26.8s
+[Validation] Evaluating held-out validation split at Epoch 020...
+[Validation Epoch 020] Rank-1: 95.49% | mAP: 85.46% | FAR@TAR80: 4.84% | DIR@FAR1: 57.49% | max TAR: 96.52%
+Epoch [021/060] Loss: 1.3063 (CE: 1.2649, Tri: 0.0414) | d(ap): 0.888, d(an): 1.243 | LR: 0.000282 | GPU Mem: 0.79GB | Time: 26.8s
+Epoch [022/060] Loss: 1.2935 (CE: 1.2519, Tri: 0.0416) | d(ap): 0.890, d(an): 1.245 | LR: 0.000274 | GPU Mem: 0.79GB | Time: 26.7s
+Epoch [023/060] Loss: 1.2843 (CE: 1.2476, Tri: 0.0367) | d(ap): 0.887, d(an): 1.249 | LR: 0.000265 | GPU Mem: 0.79GB | Time: 27.1s
+Epoch [024/060] Loss: 1.2631 (CE: 1.2287, Tri: 0.0343) | d(ap): 0.885, d(an): 1.253 | LR: 0.000257 | GPU Mem: 0.79GB | Time: 26.8s
+Epoch [025/060] Loss: 1.2634 (CE: 1.2277, Tri: 0.0357) | d(ap): 0.881, d(an): 1.249 | LR: 0.000248 | GPU Mem: 0.79GB | Time: 27.0s
+[Validation] Evaluating held-out validation split at Epoch 025...
+[Validation Epoch 025] Rank-1: 96.49% | mAP: 85.52% | FAR@TAR80: 3.74% | DIR@FAR1: 61.28% | max TAR: 97.41%
+Epoch [026/060] Loss: 1.2402 (CE: 1.2109, Tri: 0.0293) | d(ap): 0.877, d(an): 1.258 | LR: 0.000238 | GPU Mem: 0.79GB | Time: 27.1s
+Epoch [027/060] Loss: 1.2381 (CE: 1.2079, Tri: 0.0302) | d(ap): 0.879, d(an): 1.260 | LR: 0.000229 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [028/060] Loss: 1.2225 (CE: 1.1952, Tri: 0.0273) | d(ap): 0.874, d(an): 1.263 | LR: 0.000219 | GPU Mem: 0.79GB | Time: 26.8s
+Epoch [029/060] Loss: 1.2211 (CE: 1.1932, Tri: 0.0280) | d(ap): 0.876, d(an): 1.262 | LR: 0.000210 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [030/060] Loss: 1.2162 (CE: 1.1889, Tri: 0.0272) | d(ap): 0.875, d(an): 1.264 | LR: 0.000200 | GPU Mem: 0.79GB | Time: 26.8s
+[Validation] Evaluating held-out validation split at Epoch 030...
+[Validation Epoch 030] Rank-1: 96.49% | mAP: 86.76% | FAR@TAR80: 3.42% | DIR@FAR1: 57.82% | max TAR: 98.01%
+Epoch [031/060] Loss: 1.1954 (CE: 1.1704, Tri: 0.0250) | d(ap): 0.869, d(an): 1.268 | LR: 0.000190 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [032/060] Loss: 1.1849 (CE: 1.1624, Tri: 0.0225) | d(ap): 0.867, d(an): 1.271 | LR: 0.000180 | GPU Mem: 0.79GB | Time: 26.7s
+Epoch [033/060] Loss: 1.1893 (CE: 1.1650, Tri: 0.0242) | d(ap): 0.869, d(an): 1.272 | LR: 0.000170 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [034/060] Loss: 1.1739 (CE: 1.1522, Tri: 0.0216) | d(ap): 0.863, d(an): 1.274 | LR: 0.000160 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [035/060] Loss: 1.1631 (CE: 1.1434, Tri: 0.0197) | d(ap): 0.863, d(an): 1.279 | LR: 0.000150 | GPU Mem: 0.79GB | Time: 26.5s
+[Validation] Evaluating held-out validation split at Epoch 035...
+[Validation Epoch 035] Rank-1: 97.49% | mAP: 88.40% | FAR@TAR80: 2.23% | DIR@FAR1: 64.43% | max TAR: 98.3%
+Epoch [036/060] Loss: 1.1633 (CE: 1.1434, Tri: 0.0199) | d(ap): 0.862, d(an): 1.277 | LR: 0.000140 | GPU Mem: 0.79GB | Time: 26.6s
+Epoch [037/060] Loss: 1.1483 (CE: 1.1306, Tri: 0.0177) | d(ap): 0.859, d(an): 1.282 | LR: 0.000131 | GPU Mem: 0.79GB | Time: 26.5s
+Epoch [038/060] Loss: 1.1416 (CE: 1.1251, Tri: 0.0164) | d(ap): 0.858, d(an): 1.286 | LR: 0.000121 | GPU Mem: 0.79GB | Time: 26.6s
+Epoch [039/060] Loss: 1.1294 (CE: 1.1147, Tri: 0.0147) | d(ap): 0.851, d(an): 1.287 | LR: 0.000112 | GPU Mem: 0.79GB | Time: 26.3s
+Epoch [040/060] Loss: 1.1281 (CE: 1.1136, Tri: 0.0145) | d(ap): 0.853, d(an): 1.288 | LR: 0.000102 | GPU Mem: 0.79GB | Time: 26.7s
+[Validation] Evaluating held-out validation split at Epoch 040...
+[Validation Epoch 040] Rank-1: 97.24% | mAP: 88.76% | FAR@TAR80: 2.72% | DIR@FAR1: 65.98% | max TAR: 98.21%
+Epoch [041/060] Loss: 1.1258 (CE: 1.1112, Tri: 0.0146) | d(ap): 0.852, d(an): 1.289 | LR: 0.000093 | GPU Mem: 0.79GB | Time: 27.1s
+Epoch [042/060] Loss: 1.1132 (CE: 1.1006, Tri: 0.0126) | d(ap): 0.846, d(an): 1.294 | LR: 0.000085 | GPU Mem: 0.79GB | Time: 27.1s
+Epoch [043/060] Loss: 1.1089 (CE: 1.0971, Tri: 0.0118) | d(ap): 0.847, d(an): 1.297 | LR: 0.000076 | GPU Mem: 0.79GB | Time: 27.2s
+Epoch [044/060] Loss: 1.1035 (CE: 1.0925, Tri: 0.0110) | d(ap): 0.846, d(an): 1.297 | LR: 0.000068 | GPU Mem: 0.79GB | Time: 26.7s
+Epoch [045/060] Loss: 1.0966 (CE: 1.0869, Tri: 0.0097) | d(ap): 0.839, d(an): 1.303 | LR: 0.000060 | GPU Mem: 0.79GB | Time: 26.5s
+[Validation] Evaluating held-out validation split at Epoch 045...
+[Validation Epoch 045] Rank-1: 96.49% | mAP: 88.58% | FAR@TAR80: 2.02% | DIR@FAR1: 62.61% | max TAR: 97.61%
+Epoch [046/060] Loss: 1.0910 (CE: 1.0823, Tri: 0.0087) | d(ap): 0.836, d(an): 1.304 | LR: 0.000053 | GPU Mem: 0.79GB | Time: 26.6s
+Epoch [047/060] Loss: 1.0886 (CE: 1.0786, Tri: 0.0100) | d(ap): 0.835, d(an): 1.304 | LR: 0.000046 | GPU Mem: 0.79GB | Time: 26.8s
+Epoch [048/060] Loss: 1.0792 (CE: 1.0717, Tri: 0.0075) | d(ap): 0.830, d(an): 1.307 | LR: 0.000040 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [049/060] Loss: 1.0747 (CE: 1.0678, Tri: 0.0068) | d(ap): 0.828, d(an): 1.310 | LR: 0.000033 | GPU Mem: 0.79GB | Time: 26.3s
+Epoch [050/060] Loss: 1.0758 (CE: 1.0683, Tri: 0.0076) | d(ap): 0.829, d(an): 1.308 | LR: 0.000028 | GPU Mem: 0.79GB | Time: 26.8s
+[Validation] Evaluating held-out validation split at Epoch 050...
+[Validation Epoch 050] Rank-1: 97.49% | mAP: 89.62% | FAR@TAR80: 1.92% | DIR@FAR1: 61.89% | max TAR: 98.31%
+Epoch [051/060] Loss: 1.0702 (CE: 1.0637, Tri: 0.0065) | d(ap): 0.825, d(an): 1.311 | LR: 0.000023 | GPU Mem: 0.79GB | Time: 26.8s
+Epoch [052/060] Loss: 1.0667 (CE: 1.0611, Tri: 0.0056) | d(ap): 0.823, d(an): 1.312 | LR: 0.000018 | GPU Mem: 0.79GB | Time: 26.6s
+Epoch [053/060] Loss: 1.0678 (CE: 1.0617, Tri: 0.0061) | d(ap): 0.824, d(an): 1.314 | LR: 0.000014 | GPU Mem: 0.79GB | Time: 26.9s
+Epoch [054/060] Loss: 1.0617 (CE: 1.0568, Tri: 0.0049) | d(ap): 0.818, d(an): 1.315 | LR: 0.000010 | GPU Mem: 0.79GB | Time: 26.4s
+Epoch [055/060] Loss: 1.0610 (CE: 1.0559, Tri: 0.0051) | d(ap): 0.820, d(an): 1.314 | LR: 0.000007 | GPU Mem: 0.79GB | Time: 26.9s
+[Validation] Evaluating held-out validation split at Epoch 055...
+[Validation Epoch 055] Rank-1: 97.74% | mAP: 89.76% | FAR@TAR80: 1.61% | DIR@FAR1: 60.51% | max TAR: 98.41%
+Epoch [056/060] Loss: 1.0606 (CE: 1.0557, Tri: 0.0049) | d(ap): 0.818, d(an): 1.315 | LR: 0.000005 | GPU Mem: 0.79GB | Time: 26.8s
+Epoch [057/060] Loss: 1.0607 (CE: 1.0554, Tri: 0.0052) | d(ap): 0.822, d(an): 1.316 | LR: 0.000003 | GPU Mem: 0.79GB | Time: 26.7s
+Epoch [058/060] Loss: 1.0604 (CE: 1.0549, Tri: 0.0055) | d(ap): 0.820, d(an): 1.315 | LR: 0.000001 | GPU Mem: 0.79GB | Time: 26.7s
+Epoch [059/060] Loss: 1.0609 (CE: 1.0554, Tri: 0.0054) | d(ap): 0.821, d(an): 1.316 | LR: 0.000001 | GPU Mem: 0.79GB | Time: 27.0s
+Epoch [060/060] Loss: 1.0593 (CE: 1.0540, Tri: 0.0053) | d(ap): 0.815, d(an): 1.317 | LR: 0.000001 | GPU Mem: 0.79GB | Time: 26.9s
+[Validation] Evaluating held-out validation split at Epoch 060...
+[Validation Epoch 060] Rank-1: 97.74% | mAP: 89.81% | FAR@TAR80: 1.61% | DIR@FAR1: 59.01% | max TAR: 98.41%
+
+[Training] Complete. Latest checkpoint: /content/drive/MyDrive/reid_openset/runs/e0_baseline_val/checkpoints/latest_checkpoint.pth
+
+--- RUNNING EVALUATION (RUN_MODE='train') ---
+[Eval] Using device: cuda | Checkpoint: /content/drive/MyDrive/reid_openset/runs/e0_baseline_val/checkpoints/checkpoint_epoch_060.pth
+[Eval] Extracting query embeddings...
+[Eval] Extracting gallery embeddings...
+[Eval] Embeddings saved to: /content/drive/MyDrive/reid_openset/runs/e0_baseline_val/embeddings
+
+=============================================
+  CLOSED-SET RE-IDENTIFICATION RESULTS
+=============================================
+  Rank-1  Accuracy: 89.52%
+  Rank-5  Accuracy: 96.20%
+  Rank-10 Accuracy: 97.65%
+  Mean AP (mAP):   74.36%
+=============================================
+
+=======================================================
+  OPEN-SET PERSON RE-ID METRICS (V2, 5 SEEDS)
+=======================================================
+  Max TAR (Ceiling): 92.56% ± 0.39%
+  ROC AUC          : 90.35% ± 0.56%
+  EER              : 16.61% ± 0.62%
+-------------------------------------------------------
+  FAR @ TAR=70%    : 8.23% ± 1.31%
+  FAR @ TAR=80%    : 15.97% ± 1.50%
+  FAR @ TAR=85%    : 24.94% ± 1.67%
+  FAR @ TAR=90%    : 45.56% ± 3.91%
+  FAR @ TAR=95%    : N/A (max TAR = 92.56%)
+-------------------------------------------------------
+  DIR @ FAR=0.1%    : 4.72% ± 0.78%
+  DIR @ FAR=1%    : 31.04% ± 2.18%
+  DIR @ FAR=5%    : 61.31% ± 2.15%
+  DIR @ FAR=10%    : 72.49% ± 1.85%
+=======================================================
+[Eval] v2 ROC plot saved to: /content/drive/MyDrive/reid_openset/runs/e0_baseline_val/results/roc_v2.png
+[Eval] Results saved to: /content/drive/MyDrive/reid_openset/runs/e0_baseline_val/results/eval_v2.json

@@ -1,6 +1,5 @@
 """Pre-commit guard to prevent committing large files, datasets, weights, or secrets."""
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -69,12 +68,16 @@ def check_file(
     # 1. Directory restriction check
     for part in parts[:-1]:
         part_clean = part.lower().strip()
+        if norm_path.startswith("src/reid/data"):
+            continue
         if part_clean in FORBIDDEN_DIRECTORIES or part_clean.startswith("market-1501"):
             return False, f"File sits inside forbidden directory '{part}'"
 
     # 2. Forbidden binary/model/dataset extensions
     # Handle compound extensions like .tar.gz
-    double_suffix = "".join(path_obj.suffixes[-2:]).lower() if len(path_obj.suffixes) >= 2 else ""
+    double_suffix = (
+        "".join(path_obj.suffixes[-2:]).lower() if len(path_obj.suffixes) >= 2 else ""
+    )
     if suffix in FORBIDDEN_EXTENSIONS or double_suffix in FORBIDDEN_EXTENSIONS:
         ext = double_suffix if double_suffix in FORBIDDEN_EXTENSIONS else suffix
         return False, f"Forbidden large/binary file extension '{ext}'"

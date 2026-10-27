@@ -1,6 +1,7 @@
 """Unit tests for baseline loss and batch-hard triplet loss."""
 
 import torch
+
 from reid.losses import BaselineReIDLoss, BatchHardTripletLoss
 
 

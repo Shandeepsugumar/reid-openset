@@ -1,0 +1,10 @@
+{
+  "checkpoint": "/content/drive/MyDrive/reid_openset/checkpoints/latest_checkpoint.pth",
+  "rank_1": 0.9023159144893111,
+  "rank_5": 0.9628859857482185,
+  "rank_10": 0.9798099762470309,
+  "mAP": 0.7689482869467333,
+  "far_at_tar_80": 0.14421930870083433,
+  "far_at_tar_90": 0.3736591179976162,
+  "far_at_tar_95": 1.0
+}

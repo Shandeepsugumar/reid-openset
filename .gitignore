@@ -80,15 +80,16 @@ checkpoints/
 *.pkl
 
 # Datasets and experiment outputs / runs
-data/
-datasets/
+/data/
+/datasets/
 Market-1501*/
-artifacts/
-outputs/
-runs/
-logs/
+/artifacts/
+/outputs/
+/runs/
+/logs/
 *.log
-wandb/
+/wandb/
+!src/reid/data/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/

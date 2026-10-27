@@ -1,15 +1,14 @@
-"""Combined baseline ReID loss: Cross-Entropy ID loss + Batch-Hard Triplet loss."""
-
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
 
+from reid.losses.pair import AbsoluteNegativeLoss
 from reid.losses.triplet import BatchHardTripletLoss
 
 
 class BaselineReIDLoss(nn.Module):
-    """Combined Cross-Entropy ID loss and Batch-Hard Triplet loss.
+    """Combined Cross-Entropy ID loss, Batch-Hard Triplet loss, and optional Absolute Negative loss.
 
     Args:
         margin: Margin for triplet loss (default: 0.3).
@@ -17,6 +16,7 @@ class BaselineReIDLoss(nn.Module):
         weight_ce: Loss weight for cross-entropy ID loss (default: 1.0).
         weight_triplet: Loss weight for triplet loss (default: 1.0).
         soft_margin: Whether to use softplus in triplet loss.
+        neg_pair_loss: Optional AbsoluteNegativeLoss module.
     """
 
     def __init__(
@@ -26,6 +26,7 @@ class BaselineReIDLoss(nn.Module):
         weight_ce: float = 1.0,
         weight_triplet: float = 1.0,
         soft_margin: bool = False,
+        neg_pair_loss: Optional[AbsoluteNegativeLoss] = None,
     ) -> None:
         super().__init__()
         self.weight_ce = weight_ce
@@ -34,6 +35,7 @@ class BaselineReIDLoss(nn.Module):
         self.triplet_loss_fn = BatchHardTripletLoss(
             margin=margin, soft_margin=soft_margin
         )
+        self.neg_pair_loss = neg_pair_loss
 
     def forward(
         self,
@@ -56,12 +58,18 @@ class BaselineReIDLoss(nn.Module):
 
         total_loss = self.weight_ce * ce_loss + self.weight_triplet * triplet_loss
 
-        metrics = {
+        metrics: Dict[str, float] = {
             "loss": float(total_loss.detach().item()),
             "loss_ce": float(ce_loss.detach().item()),
             "loss_triplet": float(triplet_loss.detach().item()),
             "dist_ap": float(dist_ap.mean().detach().item()),
             "dist_an": float(dist_an.mean().detach().item()),
         }
+
+        if self.neg_pair_loss is not None:
+            loss_pair, pair_metrics = self.neg_pair_loss(embeddings, targets)
+            total_loss = total_loss + loss_pair
+            metrics["loss"] = float(total_loss.detach().item())
+            metrics.update(pair_metrics)
 
         return total_loss, metrics

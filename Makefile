@@ -26,10 +26,10 @@ test:
 	$(PYTHON) -m pytest tests/
 
 train:
-	$(PYTHON) scripts/train.py --config configs/default.yaml
+	$(PYTHON) scripts/train.py --config configs/baseline.yaml
 
 eval:
-	$(PYTHON) scripts/eval.py --config configs/default.yaml
+	$(PYTHON) scripts/evaluate.py --config configs/baseline.yaml
 
 export:
 	$(PYTHON) scripts/export.py --config configs/default.yaml

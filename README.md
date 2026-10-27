@@ -106,19 +106,29 @@ make test
 
 ### 3. Training & Evaluation Workflow
 
+#### Local Execution
 ```bash
-# Train an open-set ReID model
-make train
+# Fast smoke test (2 epochs, 50 identities)
+python scripts/train.py --config configs/baseline.yaml --smoke-test
 
-# Evaluate on open-set benchmark protocols
-make eval
+# Full baseline training (60 epochs, auto-resumes from latest_checkpoint.pth)
+python scripts/train.py --config configs/baseline.yaml
 
-# Export the trained model to ONNX
-make export
+# Evaluate the baseline on the final epoch snapshot (or latest checkpoint)
+# Note: Evaluation evaluates the final snapshot, never a test-set selected "best" checkpoint
+python scripts/evaluate.py --config configs/baseline.yaml --checkpoint checkpoints/baseline_resnet18/checkpoint_epoch_060.pth
+
+# Trajectory evaluation across all saved epoch snapshots
+python scripts/eval_checkpoints.py --config configs/baseline.yaml --checkpoint-dir checkpoints/baseline_resnet18
 ```
 
-### 4. Docker Deployment
+#### Google Colab Execution
+Run the hardened runner notebook at [`notebooks/colab_runner.ipynb`](notebooks/colab_runner.ipynb) on a GPU runtime:
+- **Secure Authentication**: Clone using the plain public HTTPS URL (`https://github.com/Shandeepsugumar/reid-openset.git`). If private, configure `GITHUB_PAT` in Colab Secrets (`userdata`); it is passed in-memory via `http.extraheader` without ever writing tokens to `.git/config` or printing to outputs. Colab only pulls; all commits are made from your local machine.
+- **Drive Persistence & Resilience**: All outputs (`checkpoints/`, `train_metrics.csv`, `results/`, `embeddings/`) are written directly to Google Drive (`/content/drive/MyDrive/reid_openset/runs/<exp_name>/`) via `--output-root`, guaranteeing at most one epoch is lost during unexpected disconnects.
+- **Execution Modes**: Set `RUN_MODE` in Cell 1 to `"smoke"`, `"train"`, `"eval"`, or `"sweep"` to run the desired phase.
 
+### 4. Docker Deployment
 ```bash
 # Build the Docker image
 make docker-build

@@ -1,5 +1,15 @@
 """Evaluation metrics and protocols for closed-set and open-set person ReID."""
 
+from reid.eval.lookalike import (
+    bhattacharyya_distance,
+    cluster_lookalike_groups,
+    compute_clothing_descriptor,
+    compute_or_load_identity_descriptors,
+    evaluate_partition,
+    evaluate_threshold_transfer,
+    partition_lookalike_split,
+    partition_matched_control_split,
+)
 from reid.eval.metrics import (
     compute_closed_set_cmc_and_map,
     compute_metrics_from_scores_v2,
@@ -14,4 +24,12 @@ __all__ = [
     "compute_metrics_from_scores_v2",
     "compute_openset_metrics_v2",
     "plot_roc_curve_v2",
+    "bhattacharyya_distance",
+    "cluster_lookalike_groups",
+    "compute_clothing_descriptor",
+    "compute_or_load_identity_descriptors",
+    "evaluate_partition",
+    "evaluate_threshold_transfer",
+    "partition_lookalike_split",
+    "partition_matched_control_split",
 ]

@@ -91,6 +91,9 @@ Market-1501*/
 /wandb/
 !src/reid/data/
 
+# Market-1501 image visualizations
+docs/failures/
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 

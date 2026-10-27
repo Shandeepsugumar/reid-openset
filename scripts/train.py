@@ -629,9 +629,11 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
             "loss": round(avg_loss, 5),
             "loss_ce": round(avg_ce, 5),
             "loss_triplet": round(avg_triplet, 5),
-            "loss_neg_pair": round(running["loss_neg_pair"] / max(1, steps), 5)
-            if "loss_neg_pair" in running
-            else 0.0,
+            "loss_neg_pair": (
+                round(running["loss_neg_pair"] / max(1, steps), 5)
+                if "loss_neg_pair" in running
+                else 0.0
+            ),
             "dist_ap": round(avg_ap, 4),
             "dist_an": round(avg_an, 4),
             "gpu_mem_gb": round(gpu_mem, 3),

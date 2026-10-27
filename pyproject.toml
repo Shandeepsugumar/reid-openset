@@ -46,10 +46,8 @@ where = ["src"]
 line-length = 88
 target-version = ["py39", "py310", "py311"]
 extend-exclude = '''
-/(
-  colab
-  | notebooks
-)/
+(?x)
+(colab|notebooks)
 '''
 
 [tool.ruff]

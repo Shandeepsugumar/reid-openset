@@ -30,15 +30,15 @@ def test_pk_sampler_batch_composition() -> None:
         batch_pids = [pids[idx] for idx in batch_slice]
 
         unique_in_batch = set(batch_pids)
-        assert len(unique_in_batch) == p, (
-            f"Batch {b} does not have exactly {p} unique identities"
-        )
+        assert (
+            len(unique_in_batch) == p
+        ), f"Batch {b} does not have exactly {p} unique identities"
 
         counts = {pid: batch_pids.count(pid) for pid in unique_in_batch}
         for pid, count in counts.items():
-            assert count == k, (
-                f"Identity {pid} does not have exactly {k} instances (got {count})"
-            )
+            assert (
+                count == k
+            ), f"Identity {pid} does not have exactly {k} instances (got {count})"
 
 
 def test_pk_sampler_replacement_for_small_identities() -> None:

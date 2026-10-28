@@ -5,3 +5,6 @@ e1_cosface,not run,not run,not run,not run,not run,not run,not run,not run,not r
 e2_cosface_hardid,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run
 e3_cosface_hardid_absneg,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run
 e1b_arcface,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run
+e1c_cosface_small,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run
+e4_ce_hardid,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run
+e5_ce_hardid_absneg,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run,not run

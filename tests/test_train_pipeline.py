@@ -164,3 +164,54 @@ def test_smoke_test_uses_separate_folder(tmp_path: Path) -> None:
 
     res = train(smoke_config)
     assert "test_routing_smoke" in str(res)
+
+
+def test_unmargined_training_accuracy_logging(tmp_path: Path) -> None:
+    """Verify that unmargined training top-1 accuracy is logged to train_metrics.csv."""
+    csv_file = tmp_path / "train_metrics.csv"
+    logger = CSVMetricLogger(csv_file, resume=False)
+    assert "acc" in logger.fieldnames
+    assert "train_acc" in logger.fieldnames
+
+    # Test CE linear head
+    model_ce = ReIDBackbone(
+        backbone_name="resnet18",
+        embedding_dim=64,
+        num_classes=10,
+        classifier_type="linear",
+    )
+    model_ce.train()
+    x = torch.randn(4, 3, 256, 128)
+    pids = torch.tensor([0, 1, 2, 3])
+    logits_ce, _ = model_ce(x, targets=pids)
+    unmargined_ce = model_ce.get_unmargined_logits()
+    assert torch.equal(logits_ce, unmargined_ce)
+
+    # Test Margin head (CosFace)
+    model_cos = ReIDBackbone(
+        backbone_name="resnet18",
+        embedding_dim=64,
+        num_classes=10,
+        classifier_type="cosface",
+        margin_s=30.0,
+        margin_m=0.35,
+    )
+    model_cos.train()
+    logits_cos, _ = model_cos(x, targets=pids)
+    unmargined_cos = model_cos.get_unmargined_logits()
+    assert unmargined_cos is not None
+    # Margined logits must differ from unmargined logits on target indices
+    assert not torch.allclose(logits_cos, unmargined_cos)
+    # Target logits must have margin penalty: s * (cos - m) == unmargined - s * m
+    target_diff = (
+        unmargined_cos[torch.arange(4), pids] - logits_cos[torch.arange(4), pids]
+    )
+    expected_diff = torch.tensor(30.0 * 0.35)
+    assert torch.allclose(target_diff, expected_diff, atol=1e-4)
+
+    # Log an epoch with accuracy
+    acc_val = 75.50
+    logger.log_epoch({"epoch": 1, "loss": 1.2, "acc": acc_val, "train_acc": acc_val})
+    content = csv_file.read_text(encoding="utf-8")
+    assert "acc" in content
+    assert "75.5" in content

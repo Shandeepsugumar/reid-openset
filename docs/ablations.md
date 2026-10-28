@@ -10,6 +10,9 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
 | e2_cosface_hardid | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
 | e3_cosface_hardid_absneg | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
 | e1b_arcface | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
+| e1c_cosface_small | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
+| e4_ce_hardid | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
+| e5_ce_hardid_absneg | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
 
 > [!NOTE]
 > Validation metrics are extracted from the held-out validation identities at the final training epoch. Test metrics represent evaluation on the official Market-1501 query/gallery test split using Evaluator v2 (mean ± std over 5 deterministic seeds) evaluated on `checkpoint_epoch_060.pth`. Experiments marked 'not run' await GPU execution.

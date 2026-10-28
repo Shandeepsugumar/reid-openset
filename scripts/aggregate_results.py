@@ -15,6 +15,9 @@ EXPERIMENTS = [
     "e2_cosface_hardid",
     "e3_cosface_hardid_absneg",
     "e1b_arcface",
+    "e1c_cosface_small",
+    "e4_ce_hardid",
+    "e5_ce_hardid_absneg",
 ]
 
 COLUMNS = [

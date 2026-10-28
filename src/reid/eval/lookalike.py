@@ -22,15 +22,32 @@ def compute_clothing_descriptor(
     lower_rows: Tuple[float, float] = (0.55, 0.95),
     cols: Tuple[float, float] = (0.15, 0.85),
     bins: Tuple[int, int, int] = (8, 4, 4),
+    sat_threshold: float = 0.15,
+    val_threshold: float = 0.15,
+    num_gray_bins: int = 4,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Compute 3D HSV color histograms for upper and lower body crops.
+    """Compute 3D HSV color histograms with dedicated achromatic bins for upper and lower body crops.
+
+    Pixels with low saturation (S <= sat_threshold * 255) or low value (V <= val_threshold * 255)
+    are treated as achromatic (black, gray, white) and assigned to dedicated gray-level bins
+    indexed by V. This prevents unstable or noisy hue angles on neutral/dark clothing from
+    scattering across circular hue bins.
+
+    For chromatic pixels (S > sat_threshold * 255 and V > val_threshold * 255), hue is uniformly
+    binned into bins[0] circular sectors over [0, 256), combined with saturation and value bins.
+
+    Total descriptor length per crop is num_gray_bins + (bins[0] * bins[1] * bins[2]).
+    For defaults (4 gray bins, 8x4x4 chromatic bins), total bins = 4 + 128 = 132.
 
     Args:
         image: PIL Image or RGB numpy array of shape (H, W, 3).
         upper_rows: (start_frac, end_frac) row range for upper body (default: 0.20 to 0.55).
         lower_rows: (start_frac, end_frac) row range for lower body (default: 0.55 to 0.95).
         cols: (start_frac, end_frac) column range for central crop (default: 0.15 to 0.85).
-        bins: (H_bins, S_bins, V_bins) histogram bin count (default: 8, 4, 4 = 128 bins).
+        bins: (H_bins, S_bins, V_bins) histogram bin count for chromatic pixels (default: 8, 4, 4).
+        sat_threshold: Fractional threshold in [0, 1] below which pixels are achromatic (default: 0.15).
+        val_threshold: Fractional threshold in [0, 1] below which pixels are achromatic (default: 0.15).
+        num_gray_bins: Number of gray-level bins partitioned by V for achromatic pixels (default: 4).
 
     Returns:
         Tuple of (upper_histogram, lower_histogram), each L1-normalized (sum = 1.0).
@@ -56,22 +73,46 @@ def compute_clothing_descriptor(
     upper_crop = hsv_arr[u_r0:u_r1, c0:c1]
     lower_crop = hsv_arr[l_r0:l_r1, c0:c1]
 
+    num_chromatic_bins = bins[0] * bins[1] * bins[2]
+    total_bins = num_gray_bins + num_chromatic_bins
+
     def _hist3d(crop: np.ndarray) -> np.ndarray:
         if crop.size == 0:
-            return np.ones(bins[0] * bins[1] * bins[2], dtype=np.float64) / (
-                bins[0] * bins[1] * bins[2]
-            )
+            return np.ones(total_bins, dtype=np.float64) / total_bins
+
         h_channel = crop[:, :, 0]
         s_channel = crop[:, :, 1]
         v_channel = crop[:, :, 2]
 
-        h_idx = np.clip((h_channel * bins[0]) // 256, 0, bins[0] - 1)
-        s_idx = np.clip((s_channel * bins[1]) // 256, 0, bins[1] - 1)
-        v_idx = np.clip((v_channel * bins[2]) // 256, 0, bins[2] - 1)
+        sat_thresh_val = int(round(sat_threshold * 255))
+        val_thresh_val = int(round(val_threshold * 255))
 
-        linear_idx = h_idx * (bins[1] * bins[2]) + s_idx * bins[2] + v_idx
-        num_bins = bins[0] * bins[1] * bins[2]
-        counts = np.bincount(linear_idx.ravel(), minlength=num_bins).astype(np.float64)
+        # Identify achromatic pixels (low saturation or dark shadow/black)
+        is_achromatic = (s_channel <= sat_thresh_val) | (v_channel <= val_thresh_val)
+
+        indices = np.zeros(crop.shape[:2], dtype=np.int32)
+
+        if num_gray_bins > 0:
+            # Achromatic: dedicated gray-level bins [0, num_gray_bins - 1] by Value
+            gray_idx = np.clip((v_channel * num_gray_bins) // 256, 0, num_gray_bins - 1)
+            indices[is_achromatic] = gray_idx[is_achromatic]
+
+            # Chromatic: [num_gray_bins, num_gray_bins + num_chromatic_bins - 1]
+            chromatic_mask = ~is_achromatic
+            h_idx = np.clip((h_channel * bins[0]) // 256, 0, bins[0] - 1)
+            s_idx = np.clip((s_channel * bins[1]) // 256, 0, bins[1] - 1)
+            v_idx = np.clip((v_channel * bins[2]) // 256, 0, bins[2] - 1)
+            chrom_idx = num_gray_bins + (
+                h_idx * (bins[1] * bins[2]) + s_idx * bins[2] + v_idx
+            )
+            indices[chromatic_mask] = chrom_idx[chromatic_mask]
+        else:
+            h_idx = np.clip((h_channel * bins[0]) // 256, 0, bins[0] - 1)
+            s_idx = np.clip((s_channel * bins[1]) // 256, 0, bins[1] - 1)
+            v_idx = np.clip((v_channel * bins[2]) // 256, 0, bins[2] - 1)
+            indices = h_idx * (bins[1] * bins[2]) + s_idx * bins[2] + v_idx
+
+        counts = np.bincount(indices.ravel(), minlength=total_bins).astype(np.float64)
         total = np.sum(counts)
         if total > 0:
             counts /= total
@@ -100,6 +141,9 @@ def compute_or_load_identity_descriptors(
     lower_rows: Tuple[float, float] = (0.55, 0.95),
     cols: Tuple[float, float] = (0.15, 0.85),
     bins: Tuple[int, int, int] = (8, 4, 4),
+    sat_threshold: float = 0.15,
+    val_threshold: float = 0.15,
+    num_gray_bins: int = 4,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Compute mean clothing descriptors and pairwise distance matrix for all test identities.
 
@@ -107,7 +151,7 @@ def compute_or_load_identity_descriptors(
 
     Returns:
         Tuple of (pids, upper_descriptors, lower_descriptors, distance_matrix)
-        where pids is (N,), descriptors are (N, 128), and distance_matrix is (N, N).
+        where pids is (N,), descriptors are (N, total_bins), and distance_matrix is (N, N).
     """
     if cache_path is not None:
         c_path = Path(cache_path)
@@ -135,10 +179,11 @@ def compute_or_load_identity_descriptors(
 
     sorted_pids = np.array(sorted(samples_by_pid.keys()), dtype=np.int32)
     n_pids = len(sorted_pids)
-    num_bins = bins[0] * bins[1] * bins[2]
+    num_chromatic_bins = bins[0] * bins[1] * bins[2]
+    total_bins = num_gray_bins + num_chromatic_bins
 
-    upper_descriptors = np.zeros((n_pids, num_bins), dtype=np.float64)
-    lower_descriptors = np.zeros((n_pids, num_bins), dtype=np.float64)
+    upper_descriptors = np.zeros((n_pids, total_bins), dtype=np.float64)
+    lower_descriptors = np.zeros((n_pids, total_bins), dtype=np.float64)
 
     for i, pid in enumerate(sorted_pids):
         img_paths = samples_by_pid[pid]
@@ -153,6 +198,9 @@ def compute_or_load_identity_descriptors(
                         lower_rows=lower_rows,
                         cols=cols,
                         bins=bins,
+                        sat_threshold=sat_threshold,
+                        val_threshold=val_threshold,
+                        num_gray_bins=num_gray_bins,
                     )
                     u_list.append(u_h)
                     l_list.append(l_h)

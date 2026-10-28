@@ -209,3 +209,114 @@ def test_file_list_verification_fails_on_mismatch(tmp_path: Path) -> None:
             g_pids_saved=np.array([1], dtype=np.int32),
             g_cams_saved=np.array([5], dtype=np.int32),  # actual is 2
         )
+
+
+def test_group_size_bounded_between_2_and_6() -> None:
+    """Every generated look-alike group must have size between 2 and 6."""
+    import json
+
+    groups_dir = Path("results/lookalike")
+    for fname in (
+        "groups_p01.json",
+        "groups_p02.json",
+        "groups_p05.json",
+        "groups_p10.json",
+    ):
+        fpath = groups_dir / fname
+        if fpath.is_file():
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for g in data["groups"]:
+                assert 2 <= len(g) <= 6, (
+                    f"Group {g} in {fname} has invalid size {len(g)}"
+                )
+
+
+def test_max_intra_group_distance_bounded_by_threshold() -> None:
+    """For every group, the maximum pairwise distance must be <= clustering threshold."""
+    rng = np.random.RandomState(99)
+    n = 30
+    mat = rng.uniform(0.1, 0.8, size=(n, n))
+    mat = 0.5 * (mat + mat.T)
+    np.fill_diagonal(mat, 0.0)
+    pids = np.arange(1, n + 1)
+
+    threshold_res = cluster_lookalike_groups(
+        mat, pids, percentile=5.0, max_group_size=6
+    )
+    thresh = threshold_res["distance_threshold"]
+
+    for g in threshold_res["groups"]:
+        # Find indices
+        indices = [int(p) - 1 for p in g]
+        for i_a in range(len(indices)):
+            for i_b in range(i_a + 1, len(indices)):
+                d = mat[indices[i_a], indices[i_b]]
+                assert d <= thresh + 1e-9, (
+                    f"Pair distance {d} exceeds threshold {thresh}"
+                )
+
+
+def test_matched_control_identical_counts_and_gallery_rule() -> None:
+    """Matched control has identical enrolled/unknown counts and gallery composition rule."""
+    groups = [[1, 2, 3], [4, 5], [6, 7, 8, 9]]
+    all_pids = list(range(1, 21))
+
+    lk_enrolled, lk_unknown, lk_extra = partition_lookalike_split(
+        groups, all_pids, seed=42
+    )
+    ctrl_enrolled, ctrl_unknown, ctrl_extra = partition_matched_control_split(
+        num_enrolled=len(lk_enrolled),
+        num_unknown=len(lk_unknown),
+        all_test_pids=all_pids,
+        seed=42,
+    )
+
+    # Identical counts
+    assert len(ctrl_enrolled) == len(lk_enrolled)
+    assert len(ctrl_unknown) == len(lk_unknown)
+    assert len(ctrl_extra) == len(lk_extra)
+
+    # Identical gallery rule: gallery = enrolled | extra | {0}
+    lk_gallery = lk_enrolled | lk_extra
+    ctrl_gallery = ctrl_enrolled | ctrl_extra
+    assert len(lk_gallery) == len(ctrl_gallery)
+
+
+def test_deterministic_reproducibility_across_runs() -> None:
+    """Look-alike partition and evaluation produce bitwise identical results across two runs."""
+    from reid.eval.lookalike import evaluate_partition
+
+    groups = [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+    all_pids = list(range(1, 15))
+
+    # Partition determinism
+    enrolled1, unknown1, extra1 = partition_lookalike_split(groups, all_pids, seed=7)
+    enrolled2, unknown2, extra2 = partition_lookalike_split(groups, all_pids, seed=7)
+    assert enrolled1 == enrolled2
+    assert unknown1 == unknown2
+    assert extra1 == extra2
+
+    # Evaluation determinism on synthetic features
+    rng = np.random.RandomState(7)
+    q_feats = rng.randn(20, 32)
+    q_feats /= np.linalg.norm(q_feats, axis=1, keepdims=True)
+    q_pids = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] * 2, dtype=np.int32)
+    q_cams = np.array([1] * 10 + [2] * 10, dtype=np.int32)
+
+    g_feats = rng.randn(40, 32)
+    g_feats /= np.linalg.norm(g_feats, axis=1, keepdims=True)
+    g_pids = np.array(list(range(1, 11)) * 4, dtype=np.int32)
+    g_cams = np.array([3] * 40, dtype=np.int32)
+
+    m1 = evaluate_partition(
+        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams, enrolled1, unknown1, extra1
+    )
+    m2 = evaluate_partition(
+        q_feats, q_pids, q_cams, g_feats, g_pids, g_cams, enrolled2, unknown2, extra2
+    )
+
+    assert m1["auc"] == m2["auc"]
+    assert m1["eer"] == m2["eer"]
+    assert np.array_equal(m1["raw_target_scores"], m2["raw_target_scores"])
+    assert np.array_equal(m1["raw_impostor_scores"], m2["raw_impostor_scores"])

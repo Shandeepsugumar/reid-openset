@@ -183,7 +183,7 @@ def create_comparison_grid(
 
         # Captions
         cy = y0 + img_h + 5
-        line1 = f"#{idx+1} Score: {item['score']:.4f} (tau80: {item['tau']:.4f})"
+        line1 = f"#{idx + 1} Score: {item['score']:.4f} (tau80: {item['tau']:.4f})"
         line2 = f"Probe: ID {item['probe_pid']} (cam {item['probe_cam']})"
         line3 = f"Match: ID {item['match_pid']} (cam {item['match_cam']})"
         draw.text((x0, cy), line1, fill=(0, 0, 0), font=font)
@@ -249,7 +249,7 @@ def main() -> None:
     actual_std_tar = float(tar_curve[valid_tar_idx[0]])
     actual_std_far = float(std_metrics["far_curve"][valid_tar_idx[0]])
     print(
-        f"[FailureAnalysis] Operating Threshold tau_80 = {tau_80:.4f} (Standard TAR: {actual_std_tar*100:.2f}%, FAR: {actual_std_far*100:.2f}%)"
+        f"[FailureAnalysis] Operating Threshold tau_80 = {tau_80:.4f} (Standard TAR: {actual_std_tar * 100:.2f}%, FAR: {actual_std_far * 100:.2f}%)"
     )
 
     # 4. Partition Look-Alike Split on Seed
@@ -306,6 +306,17 @@ def main() -> None:
         match_pid = int(valid_match_pids[best_sub_idx])
         is_rank1 = bool(match_pid == pid)
 
+        pid_to_group = {}
+        for g_idx, g in enumerate(groups):
+            for p in g:
+                pid_to_group[p] = g_idx
+
+        is_group_mate = bool(
+            (pid in pid_to_group)
+            and (match_pid in pid_to_group)
+            and (pid_to_group[pid] == pid_to_group[match_pid])
+        )
+
         item = {
             "probe_idx": q_idx,
             "probe_path": q_paths[q_idx],
@@ -318,6 +329,7 @@ def main() -> None:
             "score": max_score,
             "tau": tau_80,
             "is_rank1": is_rank1,
+            "is_group_mate": is_group_mate,
         }
 
         # Impostor Query False Accept: score >= tau_80
@@ -339,16 +351,23 @@ def main() -> None:
     false_rejects.sort(key=lambda x: x["score"])
     top_fr = false_rejects[: args.top_k]
 
+    # Attribution: Group-mate vs Someone Else
+    group_mate_count = sum(1 for fa in top_fa if fa.get("is_group_mate", False))
+
     print("\n" + "=" * 70)
     print(
         f"TOP {len(top_fa)} WORST FALSE ACCEPTS (Look-Alike Impostor Probes >= tau_80={tau_80:.4f})"
     )
     print("=" * 70)
+    print(
+        f"Attribution: {group_mate_count} / {len(top_fa)} matched to their own look-alike group-mate ({len(top_fa) - group_mate_count} matched to someone else)\n"
+    )
     for i, fa in enumerate(top_fa):
         p_name = Path(fa["probe_path"]).name
         m_name = Path(fa["match_path"]).name
+        mate_tag = "[OWN GROUP MATE]" if fa["is_group_mate"] else "[OTHER ID]"
         print(
-            f"#{i+1:02d} Score: {fa['score']:.4f} | Probe PID {fa['probe_pid']:<4} (cam {fa['probe_cam']}, {p_name}) -> Match PID {fa['match_pid']:<4} (cam {fa['match_cam']}, {m_name})"
+            f"#{i + 1:02d} Score: {fa['score']:.4f} {mate_tag:<18} | Probe PID {fa['probe_pid']:<4} (cam {fa['probe_cam']}, {p_name}) -> Match PID {fa['match_pid']:<4} (cam {fa['match_cam']}, {m_name})"
         )
 
     print("\n" + "=" * 70)
@@ -361,24 +380,94 @@ def main() -> None:
         m_name = Path(fr["match_path"]).name
         r1_status = "Correct ID" if fr["is_rank1"] else f"Wrong ID ({fr['match_pid']})"
         print(
-            f"#{i+1:02d} Score: {fr['score']:.4f} | Probe PID {fr['probe_pid']:<4} (cam {fr['probe_cam']}, {p_name}) -> Match {r1_status} (cam {fr['match_cam']}, {m_name})"
+            f"#{i + 1:02d} Score: {fr['score']:.4f} | Probe PID {fr['probe_pid']:<4} (cam {fr['probe_cam']}, {p_name}) -> Match {r1_status} (cam {fr['match_cam']}, {m_name})"
+        )
+
+    # Standard Protocol Worst False Accepts (for direct comparison)
+    print("\n" + "=" * 70)
+    print(
+        f"TOP {args.top_k} WORST FALSE ACCEPTS ON STANDARD PROTOCOL (tau_80={tau_80:.4f})"
+    )
+    print("=" * 70)
+    rng_std = np.random.RandomState(args.seed)
+    unique_q_pids = np.unique(q_pids[q_pids > 0])
+    shuffled_pids = rng_std.permutation(unique_q_pids)
+    n_known = int(len(shuffled_pids) * 0.5)
+    _ = set(shuffled_pids[:n_known])
+    std_unknown_pids = set(shuffled_pids[n_known:])
+
+    std_gallery_mask = np.array([pid not in std_unknown_pids for pid in g_pids])
+    std_g_feats = g_feats[std_gallery_mask]
+    std_g_pids = g_pids[std_gallery_mask]
+    std_g_cams = g_cams[std_gallery_mask]
+    std_gallery_indices = np.where(std_gallery_mask)[0]
+
+    std_false_accepts = []
+    for q_idx in range(len(q_pids)):
+        pid = q_pids[q_idx]
+        cam = q_cams[q_idx]
+        if pid not in std_unknown_pids:
+            continue
+        q_feat = q_feats[q_idx]
+        sims = np.dot(std_g_feats, q_feat)
+        valid_mask = ~((std_g_pids == pid) & (std_g_cams == cam)) & (std_g_pids != -1)
+        if not np.any(valid_mask):
+            continue
+        valid_sims = sims[valid_mask]
+        valid_g_indices = std_gallery_indices[valid_mask]
+        valid_match_pids = std_g_pids[valid_mask]
+        best_sub_idx = np.argmax(valid_sims)
+        max_score = float(valid_sims[best_sub_idx])
+        if max_score >= tau_80:
+            best_g_idx = valid_g_indices[best_sub_idx]
+            std_false_accepts.append(
+                {
+                    "probe_idx": q_idx,
+                    "probe_path": q_paths[q_idx],
+                    "probe_pid": int(pid),
+                    "probe_cam": int(cam),
+                    "match_idx": int(best_g_idx),
+                    "match_path": g_paths[best_g_idx],
+                    "match_pid": int(valid_match_pids[best_sub_idx]),
+                    "match_cam": int(g_cams[best_g_idx]),
+                    "score": max_score,
+                    "tau": tau_80,
+                    "is_rank1": False,
+                }
+            )
+
+    std_false_accepts.sort(key=lambda x: x["score"], reverse=True)
+    top_fa_std = std_false_accepts[: args.top_k]
+
+    for i, fa in enumerate(top_fa_std):
+        p_name = Path(fa["probe_path"]).name
+        m_name = Path(fa["match_path"]).name
+        print(
+            f"#{i + 1:02d} Score: {fa['score']:.4f} | Probe PID {fa['probe_pid']:<4} (cam {fa['probe_cam']}, {p_name}) -> Match PID {fa['match_pid']:<4} (cam {fa['match_cam']}, {m_name})"
         )
 
     # Generate Image Grids
     fa_grid_path = output_dir / f"worst_false_accepts_{emb_dir.name}.png"
     fr_grid_path = output_dir / f"worst_false_rejects_{emb_dir.name}.png"
+    std_fa_grid_path = output_dir / f"worst_false_accepts_standard_{emb_dir.name}.png"
 
     create_comparison_grid(
         pairs=top_fa,
         output_path=fa_grid_path,
-        title=f"Worst False Accepts: {emb_dir.name} (Operating tau80 = {tau_80:.4f})",
+        title=f"Worst False Accepts (Look-Alike): {emb_dir.name} (tau80 = {tau_80:.4f})",
         is_false_accept=True,
     )
     create_comparison_grid(
         pairs=top_fr,
         output_path=fr_grid_path,
-        title=f"Worst False Rejects: {emb_dir.name} (Operating tau80 = {tau_80:.4f})",
+        title=f"Worst False Rejects (Look-Alike): {emb_dir.name} (tau80 = {tau_80:.4f})",
         is_false_accept=False,
+    )
+    create_comparison_grid(
+        pairs=top_fa_std,
+        output_path=std_fa_grid_path,
+        title=f"Worst False Accepts (Standard Protocol): {emb_dir.name} (tau80 = {tau_80:.4f})",
+        is_false_accept=True,
     )
 
     # Save metadata JSON for failure patterns
@@ -390,8 +479,10 @@ def main() -> None:
         "total_false_accepts": len(false_accepts),
         "total_enrolled_probes": sum(1 for p in q_pids if p in enrolled_pids),
         "total_false_rejects": len(false_rejects),
+        "lookalike_top_fa_group_mate_count": group_mate_count,
         "top_false_accepts": top_fa,
         "top_false_rejects": top_fr,
+        "standard_top_false_accepts": top_fa_std,
     }
     with open(output_dir / f"failures_{emb_dir.name}.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)

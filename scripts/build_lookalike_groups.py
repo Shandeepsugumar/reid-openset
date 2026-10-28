@@ -47,6 +47,24 @@ def parse_args() -> argparse.Namespace:
         default=[2.0, 5.0, 10.0],
         help="Percentiles to evaluate for clustering threshold.",
     )
+    parser.add_argument(
+        "--sat-threshold",
+        type=float,
+        default=0.15,
+        help="Saturation threshold below which pixels are achromatic (default: 0.15).",
+    )
+    parser.add_argument(
+        "--val-threshold",
+        type=float,
+        default=0.15,
+        help="Value threshold below which pixels are achromatic (default: 0.15).",
+    )
+    parser.add_argument(
+        "--num-gray-bins",
+        type=int,
+        default=4,
+        help="Number of dedicated gray-level bins for achromatic pixels (default: 4).",
+    )
     return parser.parse_args()
 
 
@@ -59,7 +77,11 @@ def main() -> None:
 
     print(f"[Lookalike] Loading descriptors (cache: {cache_path})...")
     pids, _, _, dist_matrix = compute_or_load_identity_descriptors(
-        data_root=data_root, cache_path=cache_path
+        data_root=data_root,
+        cache_path=cache_path,
+        sat_threshold=args.sat_threshold,
+        val_threshold=args.val_threshold,
+        num_gray_bins=args.num_gray_bins,
     )
     print(f"[Lookalike] Loaded {len(pids)} test identities.")
 

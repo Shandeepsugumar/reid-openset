@@ -90,7 +90,7 @@ def aggregate_protocol_seeds(
 
     # FAR @ TAR
     for t in tar_targets:
-        t_key = f"far_at_tar_{int(t*100)}"
+        t_key = f"far_at_tar_{int(t * 100)}"
         vals = []
         for r in seed_results:
             fat = r.get("far_at_tar", {})
@@ -104,7 +104,7 @@ def aggregate_protocol_seeds(
             }
         elif len(vals) > 0:
             summary[t_key] = (
-                f"Partial ({len(vals)}/{n_seeds} reached {int(t*100)}% TAR)"
+                f"Partial ({len(vals)}/{n_seeds} reached {int(t * 100)}% TAR)"
             )
         else:
             mean_max_tar = summary.get("max_tar", {}).get("mean", 0.0)
@@ -357,7 +357,7 @@ def evaluate_embeddings_dir(
 
     def _fmt(v):
         if isinstance(v, dict) and "mean" in v and "std" in v:
-            return f"{v['mean']*100:.2f}% ± {v['std']*100:.2f}%"
+            return f"{v['mean'] * 100:.2f}% ± {v['std'] * 100:.2f}%"
         if isinstance(v, str):
             return v
         return str(v)

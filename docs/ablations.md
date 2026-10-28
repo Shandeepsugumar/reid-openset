@@ -4,11 +4,11 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
 
 | Experiment | Val Rank-1 | Val mAP | Val FAR@TAR=80 | Val DIR@FAR=1% | Test Rank-1 | Test mAP | Test FAR@TAR=80 | Test FAR@TAR=90 | Test DIR@FAR=1% | Test DIR@FAR=5% | Test max TAR | Lookalike FAR@TAR=80 | Lookalike DIR@FAR=1% |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| baseline_resnet18 | not run | not run | not run | not run | 90.23% | 76.89% | 13.81% ± 2.33% | 39.34% ± 4.01% | 37.78% ± 3.93% | 66.44% ± 2.58% | 93.12% ± 0.42% | 15.47% ± 1.12% | 31.67% ± 2.80% |
-| e0_baseline_val | 97.74% | 89.81% | 1.61% | 59.01% | 89.52% | 74.36% | 15.97% ± 1.50% | 45.56% ± 3.91% | 31.04% ± 2.18% | 61.31% ± 2.15% | 92.56% ± 0.39% | 18.67% ± 1.22% | 24.57% ± 4.71% |
-| e1_cosface | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | 41.98% ± 2.25% | 22.53% ± 3.45% |
-| e2_cosface_hardid | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | 33.50% ± 2.70% | 20.37% ± 2.71% |
-| e3_cosface_hardid_absneg | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | 34.05% ± 2.38% | 20.70% ± 2.83% |
+| baseline_resnet18 | not run | not run | not run | not run | 90.23% | 76.89% | 13.81% ± 2.33% | 39.34% ± 4.01% | 37.78% ± 3.93% | 66.44% ± 2.58% | 93.12% ± 0.42% | 17.26% ± 1.46% | 32.16% ± 4.79% |
+| e0_baseline_val | 97.74% | 89.81% | 1.61% | 59.01% | 89.52% | 74.36% | 15.97% ± 1.50% | 45.56% ± 3.91% | 31.04% ± 2.18% | 61.31% ± 2.15% | 92.56% ± 0.39% | 19.29% ± 2.05% | 28.01% ± 5.18% |
+| e1_cosface | not run | not run | not run | not run | 81.26% | 58.69% | 41.46% ± 2.42% | N/A (max TAR = 86.15%) | 28.37% ± 3.10% | 51.12% ± 2.00% | 86.15% ± 0.31% | 49.41% ± 3.18% | 23.67% ± 1.37% |
+| e2_cosface_hardid | not run | not run | not run | not run | 83.70% | 61.87% | 33.34% ± 1.86% | N/A (max TAR = 88.12%) | 24.56% ± 3.45% | 51.58% ± 1.95% | 88.12% ± 0.63% | 40.08% ± 0.64% | 20.95% ± 2.55% |
+| e3_cosface_hardid_absneg | not run | not run | not run | not run | 84.06% | 62.21% | 32.48% ± 2.90% | N/A (max TAR = 88.71%) | 25.71% ± 1.99% | 50.07% ± 1.20% | 88.71% ± 0.59% | 37.81% ± 2.45% | 23.41% ± 0.78% |
 | e1b_arcface | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run | not run |
 
 > [!NOTE]

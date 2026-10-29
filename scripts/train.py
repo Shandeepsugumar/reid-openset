@@ -122,19 +122,32 @@ class CSVMetricLogger:
             "loss_neg_pair",
             "dist_ap",
             "dist_an",
+            "acc",
+            "train_acc",
             "gpu_mem_gb",
             "epoch_time_sec",
         ]
 
         file_exists = self.log_path.is_file()
-        if not file_exists or not resume:
+        if file_exists and resume:
+            try:
+                with open(self.log_path, "r", encoding="utf-8") as f:
+                    reader = csv.reader(f)
+                    header = next(reader, None)
+                    if header:
+                        self.fieldnames = header
+            except Exception:
+                pass
+        elif not file_exists or not resume:
             with open(self.log_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=self.fieldnames)
                 writer.writeheader()
 
     def log_epoch(self, metrics: Dict[str, Any]) -> None:
         with open(self.log_path, "a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=self.fieldnames)
+            writer = csv.DictWriter(
+                f, fieldnames=self.fieldnames, extrasaction="ignore"
+            )
             row = {k: metrics.get(k, 0.0) for k in self.fieldnames}
             writer.writerow(row)
             f.flush()
@@ -554,6 +567,8 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         t0 = time.time()
         model.train()
         running = defaultdict(float)
+        running_correct = 0
+        total_samples = 0
         steps = 0
 
         # Hard Identity centroid refresh
@@ -594,11 +609,25 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
                 loss.backward()
                 optimizer.step()
 
+            with torch.no_grad():
+                unmargined = getattr(model, "last_unmargined_logits", None)
+                if unmargined is None:
+                    unmargined = logits
+                preds = unmargined.argmax(dim=1)
+                batch_correct = int((preds == pids).sum().item())
+                running_correct += batch_correct
+                total_samples += int(pids.size(0))
+
             for k_m, v_m in metrics.items():
                 running[k_m] += v_m
             steps += 1
+            batch_acc = 100.0 * running_correct / max(1, total_samples)
             pbar.set_postfix(
-                {"loss": f"{metrics['loss']:.3f}", "ce": f"{metrics['loss_ce']:.3f}"}
+                {
+                    "loss": f"{metrics['loss']:.3f}",
+                    "ce": f"{metrics['loss_ce']:.3f}",
+                    "acc": f"{batch_acc:.1f}%",
+                }
             )
 
         scheduler.step()
@@ -613,11 +642,13 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
         avg_triplet = running["loss_triplet"] / max(1, steps)
         avg_ap = running["dist_ap"] / max(1, steps)
         avg_an = running["dist_an"] / max(1, steps)
+        avg_acc = 100.0 * running_correct / max(1, total_samples)
 
         mem_str = f"GPU Mem: {gpu_mem:.2f}GB | " if is_cuda else ""
         print(
             f"Epoch [{epoch:03d}/{total_epochs:03d}] "
             f"Loss: {avg_loss:.4f} (CE: {avg_ce:.4f}, Tri: {avg_triplet:.4f}) | "
+            f"Acc: {avg_acc:.2f}% | "
             f"d(ap): {avg_ap:.3f}, d(an): {avg_an:.3f} | "
             f"LR: {cur_lr:.6f} | "
             f"{mem_str}Time: {elapsed:.1f}s"
@@ -636,6 +667,8 @@ def train(config: Dict[str, Any], args: Optional[argparse.Namespace] = None) -> 
             ),
             "dist_ap": round(avg_ap, 4),
             "dist_an": round(avg_an, 4),
+            "acc": round(avg_acc, 2),
+            "train_acc": round(avg_acc, 2),
             "gpu_mem_gb": round(gpu_mem, 3),
             "epoch_time_sec": round(elapsed, 2),
         }

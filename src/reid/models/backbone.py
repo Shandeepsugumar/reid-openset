@@ -162,10 +162,15 @@ class ReIDBackbone(nn.Module):
         if self.classifier is not None:
             if isinstance(self.classifier, MarginSoftmaxHead):
                 logits = self.classifier(feat_bn, targets)
+                self.last_unmargined_logits = getattr(
+                    self.classifier, "last_unmargined_logits", None
+                )
             else:
                 logits = self.classifier(feat_bn)
+                self.last_unmargined_logits = logits
         else:
             logits = None
+            self.last_unmargined_logits = None
 
         if return_all:
             return {
@@ -179,3 +184,7 @@ class ReIDBackbone(nn.Module):
             return logits, norm_feat
 
         return norm_feat
+
+    def get_unmargined_logits(self) -> Optional[torch.Tensor]:
+        """Return un-margined logits (cosine*scale for margin heads, raw logits for linear head)."""
+        return getattr(self, "last_unmargined_logits", None)

@@ -113,6 +113,6 @@ def test_val_split_disjointness_and_exclusion(tmp_path: Path) -> None:
 
     assert len(val_q_paths) > 0
     assert len(val_g_paths) > 0
-    assert val_q_paths.isdisjoint(
-        val_g_paths
-    ), "Val-query images must NEVER appear in val-gallery!"
+    assert val_q_paths.isdisjoint(val_g_paths), (
+        "Val-query images must NEVER appear in val-gallery!"
+    )

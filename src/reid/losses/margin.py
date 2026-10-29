@@ -75,6 +75,7 @@ class MarginSoftmaxHead(nn.Module):
 
         # Compute cosine similarity: cos(theta) in [-1, 1]
         cosine = F.linear(norm_x, norm_w)  # (B, C)
+        self.last_unmargined_logits = self.s * cosine
 
         if targets is None or self.m == 0.0:
             return self.s * cosine

@@ -15,7 +15,32 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
 | e5_ce_hardid_absneg | 95.24% | 87.07% | 2.12% | 66.07% | 86.43% | 69.86% | 22.02% ± 2.65% | 81.47% ± 11.99% | 31.26% ± 4.35% | 59.79% ± 1.49% | 90.62% ± 0.43% |
 
 > [!NOTE]
-> Validation metrics are extracted from the held-out validation identities at the final training epoch. Test metrics represent evaluation on the official Market-1501 query/gallery test split using Evaluator v2 (mean ± std over 5 deterministic seeds) evaluated on `checkpoint_epoch_060.pth`. Experiments marked 'not run' await GPU execution.
+> - **Evaluation protocol**: Validation metrics are extracted from the held-out validation identities (100 IDs) at the final training epoch (epoch 60). Test metrics represent evaluation on the official Market-1501 query/gallery test split using Evaluator v2 (mean ± std over 5 deterministic test evaluation seeds) on `checkpoint_epoch_060.pth`. Experiments marked 'not run' await GPU execution.
+> - **Single training run**: Every comparison is based on a single training run (seed 42); training-seed variance is not measured yet. The ± standard deviations reported in the test table reflect probe/gallery split variance across evaluation seeds for that single trained model, not retraining variance.
+> - **Best model overall**: `e0_baseline_val` is the best overall model on the test set, achieving the highest Rank-1 (89.52%), mAP (74.36%), max TAR (92.56% ± 0.39%), and DIR@FAR=5% (61.31% ± 2.15%), and the lowest FAR@TAR=80% (15.97% ± 1.50%) among all variants.
+> - **Winner rule**: To declare a winner over `e0_baseline_val`, a model must outperform `e0` by more than about one std on FAR@TAR=80, FAR@TAR=90, and DIR@FAR=1% simultaneously in the favorable direction.
+> - **Outcome**: Nothing beats `e0_baseline_val`.
+
+## Negative Results
+
+Across all ablations, neither margin softmax nor look-alike-only batch sampling improved upon the standard cross-entropy baseline (`e0_baseline_val`):
+
+1. **Margin Softmax (CosFace)**:
+   - Margin softmax gave no gain over the baseline on this benchmark.
+   - At standard margin ($m=0.35$, `e1`), performance degraded severely: Rank-1 dropped by -8.26% (81.26% vs 89.52%), mAP dropped by -15.67% (58.69% vs 74.36%), and FAR@TAR=80% rose sharply to 41.46% ± 2.42% vs 15.97% ± 1.50% (+25.49% worse). Max TAR reached only 86.15% ± 0.31%, making 90% TAR completely unreachable.
+   - The observed trend from `e1` ($m=0.35$) to `e1c` ($m=0.20$) shows that a smaller margin is better on every metric: Rank-1 recovered to 84.65% (+3.39% vs `e1`), mAP to 62.70% (+4.01% vs `e1`), max TAR to 88.88% (+2.73% vs `e1`), and FAR@TAR=80% dropped to 31.75% (-9.71% vs `e1`). However, even with $m=0.20$, `e1c` remains substantially worse than `e0_baseline_val` on FAR@TAR=80 (31.75% vs 15.97%), Rank-1 (84.65% vs 89.52%), and mAP (62.70% vs 74.36%).
+   - The explanatory mechanisms discussed in `docs/margin_diagnosis.md` (e.g., gradient saturation, feature suppression, threshold compression) are hypotheses, while the absence of gain from margin softmax is an empirical observation.
+
+2. **Look-Alike-Only Batches (Hard Identity Sampler)**:
+   - Restricting training batches to look-alike identity clusters did not improve open-set verification performance over standard random PK sampling.
+   - In combination with CosFace (`e2`), FAR@TAR=80 remained severely degraded at 33.34% ± 1.86% and DIR@FAR=1% dropped to 24.56% ± 3.45% (-6.48% vs `e0`).
+   - In combination with cross-entropy (`e4`), Rank-1 dropped by -2.70% (86.82% vs 89.52%), mAP dropped by -4.14% (70.22% vs 74.36%), max TAR dropped to 90.38% ± 0.68% (vs 92.56% ± 0.39%), DIR@FAR=5% dropped to 56.74% ± 2.61% (vs 61.31% ± 2.15%), and FAR@TAR=80% degraded to 22.84% ± 2.38% (vs 15.97% ± 1.50%, +6.87% worse).
+   - While `e4`'s point estimate for DIR@FAR=1% is 33.64% ± 4.76% vs 31.04% ± 2.18% for `e0`, this difference is well inside one standard deviation and accompanied by substantial degradation across all other operational points.
+   - Look-alike-only sampling restricts batch diversity by omitting random negative identities, which appears to harm generalization to unseen open-set probe identities.
+
+3. **Absolute Negative Loss (`e5`)**:
+   - Adding absolute negative pair loss to `e4` slightly reduced FAR@TAR=80 to 22.02% ± 2.65% (still +6.05% worse than `e0`'s 15.97% ± 1.50%).
+   - Test max TAR reached 90.62% ± 0.43%, meaning the 90% TAR operational point is barely reachable, with FAR@TAR=90 sitting at the ceiling at 81.47% ± 11.99% (vs 45.56% ± 3.91% for `e0`). Rank-1 (86.43%), mAP (69.86%), and DIR@FAR=5% (59.79%) all remain below `e0_baseline_val`.
 
 ## Experiment Notes and Trajectories
 
@@ -29,20 +54,20 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
 
 ### e0_baseline_val (Paired Baseline with 100 Held-Out Validation IDs)
 - **Validation Trajectory**:
-  - Epoch 05: Rank-1 92.73% | mAP 82.38% | FAR@TAR=80 8.98% | FAR@TAR=90 28.00% | DIR@FAR=1% 47.96% | max TAR 94.83%
-  - Epoch 15: Rank-1 95.74% | mAP 84.25% | FAR@TAR=80 4.73% | FAR@TAR=90 20.67% | DIR@FAR=1% 69.01% | max TAR 96.42%
-  - Epoch 30: Rank-1 96.49% | mAP 86.76% | FAR@TAR=80 3.42% | FAR@TAR=90 10.32% | DIR@FAR=1% 57.82% | max TAR 98.01%
-  - Epoch 45: Rank-1 96.49% | mAP 88.58% | FAR@TAR=80 2.02% | FAR@TAR=90  6.16% | DIR@FAR=1% 62.61% | max TAR 97.61%
-  - Epoch 60: Rank-1 97.74% | mAP 89.81% | FAR@TAR=80 1.61% | FAR@TAR=90  4.04% | DIR@FAR=1% 59.01% | max TAR 98.41%
+  - Epoch 05: Rank-1 92.73% | mAP 82.38% | FAR@TAR=80  8.98% | FAR@TAR=90 28.00% | DIR@FAR=1% 47.96% | max TAR 94.83%
+  - Epoch 15: Rank-1 95.74% | mAP 84.25% | FAR@TAR=80  4.73% | FAR@TAR=90 20.67% | DIR@FAR=1% 69.01% | max TAR 96.42%
+  - Epoch 30: Rank-1 96.49% | mAP 86.76% | FAR@TAR=80  3.42% | FAR@TAR=90 10.32% | DIR@FAR=1% 57.82% | max TAR 98.01%
+  - Epoch 45: Rank-1 96.49% | mAP 88.58% | FAR@TAR=80  2.02% | FAR@TAR=90  6.16% | DIR@FAR=1% 62.61% | max TAR 97.61%
+  - Epoch 60: Rank-1 97.74% | mAP 89.81% | FAR@TAR=80  1.61% | FAR@TAR=90  4.04% | DIR@FAR=1% 59.01% | max TAR 98.41%
   - **Late Epoch Behavior**: Metrics continuously rise through early-to-mid epochs (epochs 5–35) and flatten smoothly across late epochs (epochs 45–60) with no decline, confirming stable convergence without overfitting.
 - **Test Metrics (v2, 5 seeds)**:
-  - Rank-1: 89.52% (Paired reference baseline; -0.71% vs unheld 751-ID baseline)
-  - mAP: 74.36% (Paired reference baseline; -2.53% vs unheld 751-ID baseline)
-  - FAR@TAR=80%: 15.97% ± 1.50%
+  - Rank-1: 89.52% (Best overall; -0.71% vs unheld 751-ID baseline)
+  - mAP: 74.36% (Best overall; -2.53% vs unheld 751-ID baseline)
+  - FAR@TAR=80%: 15.97% ± 1.50% (Lowest FAR@TAR=80 across all ablation variants)
   - FAR@TAR=90%: 45.56% ± 3.91%
   - DIR@FAR=1%: 31.04% ± 2.18%
-  - DIR@FAR=5%: 61.31% ± 2.15%
-  - Max TAR: 92.56% ± 0.39%
+  - DIR@FAR=5%: 61.31% ± 2.15% (Highest DIR@FAR=5% across all ablation variants)
+  - Max TAR: 92.56% ± 0.39% (Highest max TAR across all ablation variants)
 
 ### e1_cosface (CosFace Margin Softmax m=0.35, s=30.0)
 - **Validation Trajectory**:
@@ -111,7 +136,7 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
   - DIR@FAR=1%: 30.54% ± 2.26% (-0.50% vs e0_baseline_val, +2.17% vs e1)
   - DIR@FAR=5%: 54.84% ± 2.19% (-6.47% vs e0_baseline_val, +3.72% vs e1)
   - Max TAR: 88.88% ± 0.69% (-3.68% vs e0_baseline_val, +2.73% vs e1)
-- **Key Insight**: Lowering the angular margin from $m=0.35$ to $m=0.20$ substantially improves performance across all dimensions: Rank-1 (+3.39%), mAP (+4.01%), max TAR (+2.73%), DIR@1% (+2.17%), and reduces FAR@80 by 9.71% absolute.
+- **Empirical Observation**: Lowering the angular margin from $m=0.35$ to $m=0.20$ improves performance across all dimensions: Rank-1 (+3.39%), mAP (+4.01%), max TAR (+2.73%), DIR@1% (+2.17%), and reduces FAR@80 by 9.71% absolute. This trend shows margin softmax provides no gain over baseline cross-entropy on this benchmark. The explanatory mechanisms in `docs/margin_diagnosis.md` are hypotheses.
 
 ### e4_ce_hardid (Baseline CE + Hard Identity Sampler)
 - **Validation Trajectory**:
@@ -123,12 +148,12 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
 - **Test Metrics (v2, 5 seeds)**:
   - Rank-1: 86.82% (-2.70% vs e0_baseline_val)
   - mAP: 70.22% (-4.14% vs e0_baseline_val)
-  - FAR@TAR=80%: 22.84% ± 2.38% (+6.87% vs e0_baseline_val, -8.91% to -18.62% vs CosFace)
+  - FAR@TAR=80%: 22.84% ± 2.38% (+6.87% vs e0_baseline_val)
   - FAR@TAR=90%: N/A (max TAR = 90.38% ± 0.68%)
-  - DIR@FAR=1%: 33.64% ± 4.76% (+2.60% vs e0_baseline_val, highest among all ablation models)
+  - DIR@FAR=1%: 33.64% ± 4.76% (+2.60% vs e0_baseline_val, within 1 std of e0's 31.04% ± 2.18%)
   - DIR@FAR=5%: 56.74% ± 2.61% (-4.57% vs e0_baseline_val)
   - Max TAR: 90.38% ± 0.68% (-2.18% vs e0_baseline_val)
-- **Key Insight**: Combining standard CE loss with hard-identity batch mining achieves the best open-set identification rate at 1% FAR (33.64% vs 31.04% for e0), while keeping FAR@TAR=80 far lower (22.84%) than any CosFace model (31.75%–41.46%).
+- **Assessment**: While `e4`'s point estimate for DIR@FAR=1% is 33.64% ± 4.76% vs 31.04% ± 2.18% for `e0`, the difference is well within one standard deviation. Meanwhile, `e4` is noticeably worse than `e0` across all other operational points: FAR@TAR=80 (22.84% vs 15.97%), Rank-1 (86.82% vs 89.52%), mAP (70.22% vs 74.36%), max TAR (90.38% vs 92.56%), and DIR@FAR=5% (56.74% vs 61.31%). Look-alike-only batching does not outperform the baseline.
 
 ### e5_ce_hardid_absneg (e4 + Absolute Negative Loss)
 - **Validation Trajectory**:
@@ -140,10 +165,9 @@ Aggregated validation hold-out and test-set open-set evaluation across all ablat
 - **Test Metrics (v2, 5 seeds)**:
   - Rank-1: 86.43% (-3.09% vs e0_baseline_val)
   - mAP: 69.86% (-4.50% vs e0_baseline_val)
-  - FAR@TAR=80%: 22.02% ± 2.65% (+6.05% vs e0_baseline_val, lowest FAR@80 among all non-baseline models)
-  - FAR@TAR=90%: 81.47% ± 11.99% (reaches 90% TAR on test set)
+  - FAR@TAR=80%: 22.02% ± 2.65% (+6.05% vs e0_baseline_val)
+  - FAR@TAR=90%: 81.47% ± 11.99% (barely reachable; sits at the ceiling of max TAR 90.62% ± 0.43%)
   - DIR@FAR=1%: 31.26% ± 4.35% (+0.22% vs e0_baseline_val)
   - DIR@FAR=5%: 59.79% ± 1.49% (-1.52% vs e0_baseline_val)
   - Max TAR: 90.62% ± 0.43% (-1.94% vs e0_baseline_val)
-- **Key Insight**: Absolute Negative Loss pushed max TAR above 90% (allowing evaluation of FAR@90 at 81.47%), lowered FAR@80 to 22.02%, and sustained DIR@FAR=1% above 31%.
-
+- **Assessment**: Adding absolute negative loss to `e4` leaves Rank-1 (86.43%) and mAP (69.86%) well below `e0_baseline_val` (89.52% and 74.36%). Although max TAR reaches 90.62% ± 0.43%, FAR@TAR=90 (81.47% ± 11.99%) sits directly at the ceiling and is barely reachable rather than a robust operating regime.

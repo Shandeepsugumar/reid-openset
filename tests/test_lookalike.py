@@ -227,9 +227,9 @@ def test_group_size_bounded_between_2_and_6() -> None:
             with open(fpath, "r", encoding="utf-8") as f:
                 data = json.load(f)
             for g in data["groups"]:
-                assert 2 <= len(g) <= 6, (
-                    f"Group {g} in {fname} has invalid size {len(g)}"
-                )
+                assert (
+                    2 <= len(g) <= 6
+                ), f"Group {g} in {fname} has invalid size {len(g)}"
 
 
 def test_max_intra_group_distance_bounded_by_threshold() -> None:
@@ -252,9 +252,9 @@ def test_max_intra_group_distance_bounded_by_threshold() -> None:
         for i_a in range(len(indices)):
             for i_b in range(i_a + 1, len(indices)):
                 d = mat[indices[i_a], indices[i_b]]
-                assert d <= thresh + 1e-9, (
-                    f"Pair distance {d} exceeds threshold {thresh}"
-                )
+                assert (
+                    d <= thresh + 1e-9
+                ), f"Pair distance {d} exceeds threshold {thresh}"
 
 
 def test_matched_control_identical_counts_and_gallery_rule() -> None:

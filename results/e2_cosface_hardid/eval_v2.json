@@ -1,4 +1,5 @@
 {
+  "checkpoint": "/content/drive/MyDrive/reid_openset/runs/e2_cosface_hardid/checkpoints/checkpoint_epoch_060.pth",
   "protocol": "openset_v2",
   "rank_1": 83.69952494061758,
   "rank_5": 94.03206650831353,

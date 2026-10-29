@@ -116,3 +116,7 @@ secrets*
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Failures documentation
+/docs/failures/
+

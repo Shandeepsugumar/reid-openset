@@ -12,6 +12,9 @@ CONFIG_FILES = [
     "configs/exp/e2_cosface_hardid.yaml",
     "configs/exp/e3_cosface_hardid_absneg.yaml",
     "configs/exp/e1b_arcface.yaml",
+    "configs/exp/e1c_cosface_small.yaml",
+    "configs/exp/e4_ce_hardid.yaml",
+    "configs/exp/e5_ce_hardid_absneg.yaml",
 ]
 
 
@@ -55,6 +58,28 @@ def test_specific_config_settings() -> None:
     assert c1b["loss"]["cls"] == "arcface"
     assert c1b["loss"]["margin_m"] == 0.5
     assert c1b["loss"]["scale_s"] == 30.0
+
+    c1c = load_config("configs/exp/e1c_cosface_small.yaml")
+    assert c1c["loss"]["cls"] == "cosface"
+    assert c1c["loss"]["margin_m"] == 0.20
+    assert c1c["loss"]["scale_s"] == 30.0
+    assert c1c["loss"]["margin_warmup_epochs"] == 10
+    assert c1c["data"].get("sampler", "pk") == "pk"
+
+    c4 = load_config("configs/exp/e4_ce_hardid.yaml")
+    assert c4["loss"].get("cls", "ce") == "ce"
+    assert c4["loss"]["label_smoothing"] == 0.1
+    assert c4["data"]["sampler"] == "hard_identity"
+    assert c4["data"]["hard_sampler"]["group_size"] == 4
+    assert c4["data"]["hard_sampler"]["m_neighbors"] == 12
+
+    c5 = load_config("configs/exp/e5_ce_hardid_absneg.yaml")
+    assert c5["loss"].get("cls", "ce") == "ce"
+    assert c5["loss"]["label_smoothing"] == 0.1
+    assert c5["data"]["sampler"] == "hard_identity"
+    assert c5["loss"]["neg_pair"]["enabled"] is True
+    assert c5["loss"]["neg_pair"]["tau_neg"] == 0.5
+    assert c5["loss"]["neg_pair"]["weight"] == 0.5
 
 
 @pytest.mark.parametrize("cfg_path", CONFIG_FILES)

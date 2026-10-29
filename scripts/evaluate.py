@@ -77,6 +77,18 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Device override ('cuda' or 'cpu').",
     )
+    parser.add_argument(
+        "--save-val-embeddings",
+        action="store_true",
+        default=False,
+        help="Extract and save embeddings for held-out validation query and gallery splits.",
+    )
+    parser.add_argument(
+        "--val-only",
+        action="store_true",
+        default=False,
+        help="Extract only validation embeddings, skipping test set feature extraction and evaluation.",
+    )
     return parser.parse_args()
 
 
@@ -169,24 +181,10 @@ def evaluate(
         config.get("data", {}).get("num_workers", 2 if device.type == "cuda" else 0)
     )
 
-    query_set = Market1501(root_dir=data_folder, split="query", image_size=image_size)
-    gallery_set = Market1501(
-        root_dir=data_folder, split="gallery", image_size=image_size
-    )
-    query_loader = DataLoader(
-        query_set,
-        batch_size=128,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=(device.type == "cuda"),
-    )
-    gallery_loader = DataLoader(
-        gallery_set,
-        batch_size=128,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=(device.type == "cuda"),
-    )
+    save_val_embeddings = bool(getattr(args, "save_val_embeddings", False))
+    val_only = bool(getattr(args, "val_only", False))
+    if val_only:
+        save_val_embeddings = True
 
     # Load Checkpoint first to determine model parameters dynamically
     ckpt = torch.load(ckpt_file, map_location=device)
@@ -195,14 +193,14 @@ def evaluate(
     if "classifier.weight" in state_dict:
         num_classes = state_dict["classifier.weight"].size(0)
     else:
-        val_identities = int(config.get("data", {}).get("val_identities", 0))
-        val_seed = int(config.get("data", {}).get("val_seed", 42))
+        val_identities_cfg = int(config.get("data", {}).get("val_identities", 0))
+        val_seed_cfg = int(config.get("data", {}).get("val_seed", 42))
         train_set = Market1501(
             root_dir=data_folder,
             split="train",
             image_size=image_size,
-            val_identities=val_identities,
-            val_seed=val_seed,
+            val_identities=val_identities_cfg,
+            val_seed=val_seed_cfg,
         )
         num_classes = train_set.num_classes
 
@@ -221,6 +219,126 @@ def evaluate(
 
     model.load_state_dict(state_dict)
     model.eval()
+
+    # Extract and save validation embeddings if requested
+    if save_val_embeddings:
+        val_identities = int(config.get("data", {}).get("val_identities", 0))
+        val_seed = int(config.get("data", {}).get("val_seed", 42))
+
+        # Check candidate locations for val_identities.json
+        candidate_val_json = [
+            exp_dir / "val_identities.json",
+            results_dir / "val_identities.json",
+            output_root / exp_name / "val_identities.json",
+            PROJECT_ROOT / "results" / exp_name / "val_identities.json",
+        ]
+        for v_path in candidate_val_json:
+            if v_path.is_file():
+                try:
+                    with open(v_path, "r", encoding="utf-8") as vf:
+                        v_data = json.load(vf)
+                    val_identities = len(v_data.get("val_identities", []))
+                    val_seed = int(v_data.get("val_seed", val_seed))
+                    print(
+                        f"[Eval] Loaded validation identity list from {v_path}: {val_identities} IDs, seed {val_seed}"
+                    )
+                    break
+                except Exception as e:
+                    print(f"[Eval] Warning: Failed reading {v_path}: {e}")
+
+        if val_identities <= 0:
+            raise ValueError(
+                f"Cannot extract validation embeddings: val_identities is {val_identities}. "
+                "Ensure config has data.val_identities > 0 or val_identities.json exists."
+            )
+
+        val_q_set = Market1501(
+            root_dir=data_folder,
+            split="val_query",
+            image_size=image_size,
+            val_identities=val_identities,
+            val_seed=val_seed,
+        )
+        val_g_set = Market1501(
+            root_dir=data_folder,
+            split="val_gallery",
+            image_size=image_size,
+            val_identities=val_identities,
+            val_seed=val_seed,
+        )
+        val_q_loader = DataLoader(
+            val_q_set,
+            batch_size=128,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=(device.type == "cuda"),
+        )
+        val_g_loader = DataLoader(
+            val_g_set,
+            batch_size=128,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=(device.type == "cuda"),
+        )
+
+        print("[Eval] Extracting validation query embeddings...")
+        val_q_feats, val_q_pids, val_q_cams = extract_split_features(
+            model, val_q_loader, device, desc="Val Query Set"
+        )
+        print("[Eval] Extracting validation gallery embeddings...")
+        val_g_feats, val_g_pids, val_g_cams = extract_split_features(
+            model, val_g_loader, device, desc="Val Gallery Set"
+        )
+
+        np.save(embeddings_dir / "val_query_embeddings.npy", val_q_feats)
+        np.save(embeddings_dir / "val_query_pids.npy", val_q_pids)
+        np.save(embeddings_dir / "val_query_camids.npy", val_q_cams)
+        np.save(embeddings_dir / "val_gallery_embeddings.npy", val_g_feats)
+        np.save(embeddings_dir / "val_gallery_pids.npy", val_g_pids)
+        np.save(embeddings_dir / "val_gallery_camids.npy", val_g_cams)
+
+        # Stacked arrays
+        val_all_feats = np.vstack([val_q_feats, val_g_feats])
+        val_all_pids = np.concatenate([val_q_pids, val_g_pids])
+        val_all_cams = np.concatenate([val_q_cams, val_g_cams])
+        np.save(embeddings_dir / "val_embeddings.npy", val_all_feats)
+        np.save(embeddings_dir / "val_pids.npy", val_all_pids)
+        np.save(embeddings_dir / "val_camids.npy", val_all_cams)
+
+        print(
+            f"[Eval] Validation embeddings ({len(val_q_pids)} queries, {len(val_g_pids)} gallery, "
+            f"{len(val_all_pids)} total) saved to: {embeddings_dir}"
+        )
+
+        if val_only:
+            print("[Eval] --val-only active: skipped test set evaluation. Done.")
+            return {
+                "checkpoint": str(ckpt_file),
+                "status": "val_embeddings_extracted",
+                "val_queries": len(val_q_pids),
+                "val_gallery": len(val_g_pids),
+                "embeddings_dir": str(embeddings_dir),
+            }
+
+    # Test Dataset
+    query_set = Market1501(root_dir=data_folder, split="query", image_size=image_size)
+    gallery_set = Market1501(
+        root_dir=data_folder, split="gallery", image_size=image_size
+    )
+    query_loader = DataLoader(
+        query_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == "cuda"),
+    )
+    gallery_loader = DataLoader(
+        gallery_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == "cuda"),
+    )
 
     # Extract Features
     print("[Eval] Extracting query embeddings...")

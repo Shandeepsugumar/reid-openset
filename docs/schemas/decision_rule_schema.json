@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenSetDecisionConfig",
+  "description": "Configuration schema for inference-time open-set ReID decision rule and threshold calibration.",
+  "type": "object",
+  "required": [
+    "decision_rule",
+    "threshold",
+    "score_scale"
+  ],
+  "properties": {
+    "decision_rule": {
+      "type": "object",
+      "required": [
+        "name",
+        "parameters"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "raw",
+            "gap",
+            "znorm",
+            "snorm",
+            "csls"
+          ],
+          "description": "Selected decision rule identifier."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Hyperparameters for the chosen rule (e.g. lambda for gap, k for znorm/snorm/csls).",
+          "properties": {
+            "lambda": {
+              "type": "number",
+              "description": "Second-best penalty factor for gap rule."
+            },
+            "k": {
+              "type": "integer",
+              "description": "Number of top cohort cosine neighbors."
+            }
+          }
+        },
+        "cohort_file": {
+          "type": "string",
+          "description": "Relative path to external cohort embeddings .npy file (e.g. val_cohort.npy, release asset, never committed to git)."
+        }
+      }
+    },
+    "score_scale": {
+      "type": "string",
+      "enum": [
+        "cosine",
+        "margin_gap",
+        "zscore",
+        "csls"
+      ],
+      "description": "Score scale corresponding to the decision rule output."
+    },
+    "threshold": {
+      "type": "number",
+      "description": "Calibrated decision threshold operating on the specified score_scale."
+    },
+    "calibration": {
+      "type": "object",
+      "description": "Calibration metadata and operating point definitions.",
+      "properties": {
+        "target_tar": {
+          "type": "number",
+          "description": "Target True Accept Rate at which threshold was set (e.g. 0.80)."
+        },
+        "achieved_far": {
+          "type": "number",
+          "description": "False Alarm Rate measured at the target TAR threshold."
+        },
+        "cohort_identities_count": {
+          "type": "integer",
+          "description": "Number of held-out cohort identities used (e.g. 50)."
+        }
+      }
+    }
+  }
+}

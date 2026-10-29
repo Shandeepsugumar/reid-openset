@@ -299,3 +299,28 @@ def test_gap_rule_treats_pid_0_distractors_as_distinct() -> None:
     # score = 0.9 - 0.8 = 0.1
     # Check max_tar is 1.0
     assert res["max_tar"] == 1.0
+
+
+def test_snorm_rule_averages_probe_and_gallery_znorm() -> None:
+    """SNorm rule must compute the exact arithmetic mean of probe and gallery z-norms."""
+    from reid.decision.rules import SNormRule
+
+    q = np.array([[1.0, 0.0]], dtype=np.float32)
+    g = np.array([[1.0, 0.0]], dtype=np.float32)
+    cohort = np.array([[0.6, 0.8], [0.8, 0.6]], dtype=np.float32)
+
+    rule = SNormRule(k=2)
+    res = rule.evaluate_split(
+        q_feats=q,
+        q_pids=np.array([1]),
+        q_cams=np.array([1]),
+        g_feats=g,
+        g_pids=np.array([1]),
+        g_cams=np.array([2]),
+        enrolled_pids={1},
+        unknown_pids=set(),
+        cohort_feats=cohort,
+        tar_targets=(0.80, 1.0),
+    )
+    assert res["max_tar"] == 1.0
+    assert res["far_at_tar"][1.0] == 0.0

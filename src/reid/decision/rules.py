@@ -220,9 +220,14 @@ class GapRule(BaseDecisionRule):
 
     name: str = "gap"
 
-    def __init__(self, lambda_val: float = 1.0) -> None:
-        super().__init__(lambda_val=lambda_val)
+    def __init__(
+        self, lambda_val: float = 1.0, min_gallery_identities: int = 2
+    ) -> None:
+        super().__init__(
+            lambda_val=lambda_val, min_gallery_identities=min_gallery_identities
+        )
         self.lambda_val = float(lambda_val)
+        self.min_gallery_identities = max(1, int(min_gallery_identities))
 
     def evaluate_split(
         self,
@@ -242,6 +247,9 @@ class GapRule(BaseDecisionRule):
         valid_g_pids = set(enrolled_pids)
         if extra_gallery_pids is not None:
             valid_g_pids.update(extra_gallery_pids)
+
+        # Fallback to raw if enrolled gallery size is below threshold
+        gallery_too_small = len(valid_g_pids) < self.min_gallery_identities
 
         g_mask = np.isin(g_pids, list(valid_g_pids)) | (g_pids == 0)
         sub_g_feats = g_feats[g_mask]
@@ -277,21 +285,24 @@ class GapRule(BaseDecisionRule):
             top_pid = valid_match_pids[best_idx]
             is_rank1 = bool(top_pid == pid)
 
-            # Determine s2: distractor pid 0 are distinct people
-            # If top_pid == 0, that specific distractor index is excluded; other distractors and pids are valid
-            # If top_pid > 0, all gallery items with pid != top_pid (including all distractors) are valid
-            if top_pid == 0:
-                s2_mask = np.ones(len(valid_sims), dtype=bool)
-                s2_mask[best_idx] = False
+            if gallery_too_small:
+                score = s1
             else:
-                s2_mask = valid_match_pids != top_pid
+                # Determine s2: distractor pid 0 are distinct people
+                # If top_pid == 0, that specific distractor index is excluded; other distractors and pids are valid
+                # If top_pid > 0, all gallery items with pid != top_pid (including all distractors) are valid
+                if top_pid == 0:
+                    s2_mask = np.ones(len(valid_sims), dtype=bool)
+                    s2_mask[best_idx] = False
+                else:
+                    s2_mask = valid_match_pids != top_pid
 
-            if np.any(s2_mask):
-                s2 = float(np.max(valid_sims[s2_mask]))
-            else:
-                s2 = -1.0
-
-            score = s1 - (self.lambda_val * s2)
+                if np.any(s2_mask):
+                    s2 = float(np.max(valid_sims[s2_mask]))
+                    score = s1 - (self.lambda_val * s2)
+                else:
+                    # Fallback to raw score when s2 is undefined
+                    score = s1
 
             if pid in enrolled_pids:
                 target_scores.append(score)

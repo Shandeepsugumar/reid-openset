@@ -324,3 +324,87 @@ def test_snorm_rule_averages_probe_and_gallery_znorm() -> None:
     )
     assert res["max_tar"] == 1.0
     assert res["far_at_tar"][1.0] == 0.0
+
+
+def test_gap_rule_fallback_when_s2_undefined() -> None:
+    """GapRule must gracefully fall back to raw score when gallery has only 1 identity and no s2 candidates."""
+    q = np.array([[1.0, 0.0]], dtype=np.float32)
+    g = np.array([[0.8, 0.6]], dtype=np.float32)
+
+    raw_res = RawRule().evaluate_split(
+        q_feats=q,
+        q_pids=np.array([1]),
+        q_cams=np.array([1]),
+        g_feats=g,
+        g_pids=np.array([1]),
+        g_cams=np.array([2]),
+        enrolled_pids={1},
+        unknown_pids=set(),
+        tar_targets=(0.80, 1.0),
+    )
+
+    gap_res = GapRule(lambda_val=0.5, min_gallery_identities=1).evaluate_split(
+        q_feats=q,
+        q_pids=np.array([1]),
+        q_cams=np.array([1]),
+        g_feats=g,
+        g_pids=np.array([1]),
+        g_cams=np.array([2]),
+        enrolled_pids={1},
+        unknown_pids=set(),
+        tar_targets=(0.80, 1.0),
+    )
+
+    # With only 1 identity, s2 is undefined, so score falls back to raw score
+    assert gap_res["max_tar"] == raw_res["max_tar"]
+    assert gap_res["far_at_tar"][1.0] == raw_res["far_at_tar"][1.0]
+
+
+def test_gap_rule_min_gallery_identities_parameter() -> None:
+    """GapRule must fall back to raw score when enrolled gallery size < min_gallery_identities."""
+    # 2 enrolled identities
+    q = np.array([[1.0, 0.0]], dtype=np.float32)
+    g = np.array([[0.9, 0.43588989], [0.5, 0.8660254]], dtype=np.float32)
+    g_pids = np.array([1, 2])
+    g_cams = np.array([2, 2])
+
+    raw_res = RawRule().evaluate_split(
+        q_feats=q,
+        q_pids=np.array([1]),
+        q_cams=np.array([1]),
+        g_feats=g,
+        g_pids=g_pids,
+        g_cams=g_cams,
+        enrolled_pids={1, 2},
+        unknown_pids=set(),
+        tar_targets=(0.80, 1.0),
+    )
+
+    # When min_gallery_identities=5 (gallery has 2), gap falls back to raw
+    fallback_res = GapRule(lambda_val=0.5, min_gallery_identities=5).evaluate_split(
+        q_feats=q,
+        q_pids=np.array([1]),
+        q_cams=np.array([1]),
+        g_feats=g,
+        g_pids=g_pids,
+        g_cams=g_cams,
+        enrolled_pids={1, 2},
+        unknown_pids=set(),
+        tar_targets=(0.80, 1.0),
+    )
+    assert fallback_res["max_tar"] == raw_res["max_tar"]
+    assert fallback_res["far_at_tar"][1.0] == raw_res["far_at_tar"][1.0]
+
+    # When min_gallery_identities=2, gap rule applies
+    active_res = GapRule(lambda_val=0.5, min_gallery_identities=2).evaluate_split(
+        q_feats=q,
+        q_pids=np.array([1]),
+        q_cams=np.array([1]),
+        g_feats=g,
+        g_pids=g_pids,
+        g_cams=g_cams,
+        enrolled_pids={1, 2},
+        unknown_pids=set(),
+        tar_targets=(0.80, 1.0),
+    )
+    assert active_res["max_tar"] == 1.0

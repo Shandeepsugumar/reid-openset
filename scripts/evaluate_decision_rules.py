@@ -142,7 +142,22 @@ def evaluate_rule_on_seeds(
             "std": float(np.std(vals)),
         }
 
-    return {"summary": agg, "per_seed": per_seed}
+    clean_per_seed = []
+    for r in per_seed:
+        clean_per_seed.append(
+            {
+                "max_tar": float(r["max_tar"]),
+                "auc": float(r["auc"]),
+                "eer": float(r["eer"]),
+                "far_at_tar": {
+                    str(k): (float(v) if v is not None else None)
+                    for k, v in r["far_at_tar"].items()
+                },
+                "dir_at_far": {str(k): float(v) for k, v in r["dir_at_far"].items()},
+            }
+        )
+
+    return {"summary": agg, "per_seed": clean_per_seed}
 
 
 def main() -> None:
@@ -256,12 +271,99 @@ def main() -> None:
                 splits=proto_splits,
                 cohort_feats=cohort_feats,
             )
-            test_results[proto_name][rule_name] = res["summary"]
+            test_results[proto_name][rule_name] = {
+                "summary": res["summary"],
+                "per_seed": res["per_seed"],
+            }
+
+        # Compute paired differences against raw
+        def _get_far80(run_dict: Dict[str, Any]) -> float:
+            f_dict = run_dict["far_at_tar"]
+            val = f_dict.get("0.8", f_dict.get(0.80, 1.0))
+            return 1.0 if val is None else float(val)
+
+        def _get_dir1(run_dict: Dict[str, Any]) -> float:
+            d_dict = run_dict["dir_at_far"]
+            return float(d_dict.get("0.01", d_dict.get(0.01, 0.0)))
+
+        def _get_dir5(run_dict: Dict[str, Any]) -> float:
+            d_dict = run_dict["dir_at_far"]
+            return float(d_dict.get("0.05", d_dict.get(0.05, 0.0)))
+
+        raw_runs = test_results[proto_name]["raw"]["per_seed"]
+        raw_far80 = np.array([_get_far80(r) for r in raw_runs])
+        raw_dir1 = np.array([_get_dir1(r) for r in raw_runs])
+        raw_dir5 = np.array([_get_dir5(r) for r in raw_runs])
+
+        print(f"\n  --- PAIRED DIFFERENCES VS RAW: {proto_name} ---")
+        print(
+            f"  {'Rule':<16} | {'FAR@80 diff':<18} | {'DIR@1 diff':<18} | {'DIR@5 diff':<18} | Verdict"
+        )
+        print("  " + "-" * 85)
+
+        for rule_name, rule_data in test_results[proto_name].items():
+            runs = rule_data["per_seed"]
+            arr_far80 = np.array([_get_far80(r) for r in runs])
+            arr_dir1 = np.array([_get_dir1(r) for r in runs])
+            arr_dir5 = np.array([_get_dir5(r) for r in runs])
+
+            # Positive means improvement: lower FAR, higher DIR
+            d_far80 = raw_far80 - arr_far80
+            d_dir1 = arr_dir1 - raw_dir1
+            d_dir5 = arr_dir5 - raw_dir5
+
+            m_far80, s_far80 = float(np.mean(d_far80)), float(np.std(d_far80))
+            m_dir1, s_dir1 = float(np.mean(d_dir1)), float(np.std(d_dir1))
+            m_dir5, s_dir5 = float(np.mean(d_dir5)), float(np.std(d_dir5))
+
+            pos_far80 = int(np.sum(d_far80 > 0))
+            pos_dir1 = int(np.sum(d_dir1 > 0))
+            pos_dir5 = int(np.sum(d_dir5 > 0))
+
+            # Improvement rule:
+            # All of FAR@TAR=80, DIR@FAR=1%, DIR@FAR=5% better by more than about one std,
+            # positive paired sign in at least 4 of 5 seeds; otherwise "tie" or "loss"
+            beat_far80 = (m_far80 > 0.95 * s_far80) and (pos_far80 >= 4)
+            beat_dir1 = (m_dir1 > 0.95 * s_dir1) and (pos_dir1 >= 4)
+            beat_dir5 = (m_dir5 > 0.95 * s_dir5) and (pos_dir5 >= 4)
+
+            if rule_name == "raw":
+                verdict = "baseline"
+            elif beat_far80 and beat_dir1 and beat_dir5:
+                verdict = "win"
+            elif (
+                (m_far80 < -0.95 * s_far80)
+                or (m_dir1 < -0.95 * s_dir1)
+                or (m_dir5 < -0.95 * s_dir5)
+            ):
+                verdict = "loss"
+            else:
+                verdict = "tie"
+
+            rule_data["paired_vs_raw"] = {
+                "d_far80_mean": m_far80,
+                "d_far80_std": s_far80,
+                "d_far80_pos": pos_far80,
+                "d_dir1_mean": m_dir1,
+                "d_dir1_std": s_dir1,
+                "d_dir1_pos": pos_dir1,
+                "d_dir5_mean": m_dir5,
+                "d_dir5_std": s_dir5,
+                "d_dir5_pos": pos_dir5,
+                "verdict": verdict,
+            }
+
+            s_f = f"{m_far80 * 100:+5.2f}+-{s_far80 * 100:4.2f} ({pos_far80}/5)"
+            s_d1 = f"{m_dir1 * 100:+5.2f}+-{s_dir1 * 100:4.2f} ({pos_dir1}/5)"
+            s_d5 = f"{m_dir5 * 100:+5.2f}+-{s_dir5 * 100:4.2f} ({pos_dir5}/5)"
+            print(
+                f"  {rule_name:<16} | {s_f:<18} | {s_d1:<18} | {s_d5:<18} | {verdict}"
+            )
 
     with open(out_dir / "test_evaluation.json", "w", encoding="utf-8") as tf:
         json.dump(test_results, tf, indent=2)
 
-    print(f"[Decision Rules] Results saved to {out_dir}")
+    print(f"\n[Decision Rules] Results saved to {out_dir}")
 
 
 if __name__ == "__main__":
